@@ -1,0 +1,18 @@
+{
+    "name": "pillar-dao-contracts",
+    "devDependencies": {
+        "@nomiclabs/hardhat-ethers": "^2.0.4",
+        "@nomiclabs/hardhat-waffle": "^2.0.2",
+        "chai": "^4.3.6",
+        "ethereum-waffle": "^3.4.0",
+        "ethers": "^5.5.4",
+        "hardhat": "^2.8.2"
+    },
+    "dependencies": {
+        "@defi-wonderland/smock": "^2.0.7",
+        "@nomiclabs/hardhat-etherscan": "^3.0.0",
+        "@openzeppelin/contracts": "^4.4.2",
+        "dotenv": "^14.2.0",
+        "hardhat-gas-reporter": "^1.0.7"
+    }
+}
