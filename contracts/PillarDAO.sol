@@ -15,7 +15,6 @@ contract PillarDAO is IPillarDAO, Ownable {
     uint private constant stakingTerm = 52 weeks;
     uint private stakeAmount;
     MembershipNFT private membershipNFT;
-    string private baseURI = "ipfs://QmPSdB5ieVnPdmsj68ksAWV3ZmrLjr8ESLNVq6NpG8MsYg/";
 
     struct Deposit {
         uint256 depositAmount;
@@ -27,14 +26,14 @@ contract PillarDAO is IPillarDAO, Ownable {
 
     constructor(
         address _stakingToken,
-        uint _stakeAmount
+        uint _stakeAmount,
+        address _membershipNft
     ) public {
         require(_stakingToken != address(0), "Invalid staking contract");
         require(_stakeAmount > 0, "Invalid staking amount");
         stakingToken = _stakingToken;
         stakeAmount = _stakeAmount;
-        membershipNFT = new MembershipNFT("PillarDAO Membership","PillarDAO",address(this));
-        membershipNFT.setBaseURI(baseURI);
+        membershipNFT = MembershipNFT(_membershipNft);
     }
 
     function deposit(uint _amount) override external {
@@ -103,5 +102,9 @@ contract PillarDAO is IPillarDAO, Ownable {
         if(balance > 0) {
             token.safeTransfer(msg.sender,balance);
         }
+    }
+
+    function setMembershipNFT(address _newAddr) external onlyOwner {
+        membershipNFT = MembershipNFT(_newAddr);
     }    
 }

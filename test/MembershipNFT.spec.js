@@ -1,6 +1,7 @@
 
 const { ethers, waffle } = require('hardhat');
 const { expect } = require('chai');
+const { collapseTextChangeRangesAcrossMultipleVersions } = require('typescript');
  
  describe('MembershipNFT', () => {
    let membershipNFT;
@@ -20,10 +21,10 @@ const { expect } = require('chai');
          const ERC721Factory = await ethers.getContractFactory('MembershipNFT');
          membershipNFT = await ERC721Factory.deploy(
              'Pillar DAO Membership',
-             'PillarDAO',
-             vault.address
+             'PillarDAO'
          );
          await membershipNFT.deployed();
+         //await membershipNFT.setVaultAddress(owner.address);
      })
      
      it('Deploys without errors', async () => {
@@ -43,9 +44,9 @@ const { expect } = require('chai');
         expect(tokenId).to.equal(1);
      });
 
-     it('Only owner should mint', async () => {
+     it('Only vault should mint', async () => {
         const tran = membershipNFT.connect(addr2).mint(addr3.address);
-        await expect(tran).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(tran).to.be.revertedWith('Not the vault');
      });
 
      it('setBaseURI()', async () => {
@@ -62,13 +63,13 @@ const { expect } = require('chai');
      it('Cannot Transfer', async () => {
          const tokenId = 1;
          const tran = membershipNFT.connect(addr2).transferFrom(addr2.address,addr3.address,tokenId);
-         await expect(tran).to.be.revertedWith('Ownable: caller is not the owner');
+         await expect(tran).to.be.revertedWith('Not the vault');
      });
 
-     it('Only owner should burn', async () => {
+     it('Only vault should burn', async () => {
         const tokenId = 1;
         const tran = membershipNFT.connect(addr2).burn(tokenId);
-        await expect(tran).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(tran).to.be.revertedWith('Not the vault');
      });
 
      it('Only valid token can be burned', async () => {

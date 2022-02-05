@@ -15,34 +15,33 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     address private vaultAddress = address(0);
 
     modifier onlyVault() {
-        require(msg.sender != vaultAddress, "Not the valut");
+        require(msg.sender == vaultAddress, "Not the vault");
         _;
     }
 
     constructor(
         string memory name,
-        string memory symbol,
-        address _vaultAddress
+        string memory symbol
     ) ERC721(name, symbol) {
-        vaultAddress = _vaultAddress;
+        vaultAddress = msg.sender;
     }
 
     function _beforeTokenTransfer(
         address from,
         address to,
         uint256 tokenId
-    ) internal onlyOwner virtual override {
+    ) internal onlyVault virtual override {
         //disable transfers
         super._beforeTokenTransfer(from,to,tokenId);
     }
 
-    function mint(address _to) external onlyOwner nonReentrant returns (uint256) {
+    function mint(address _to) external onlyVault nonReentrant returns (uint256) {
         uint256 mintIndex = totalSupply().add(1);
         _safeMint(_to, mintIndex);
         return mintIndex;
     }
 
-    function burn(uint256 tokenId) onlyOwner external {
+    function burn(uint256 tokenId) onlyVault external {
         _burn(tokenId);
     }
 
@@ -50,7 +49,7 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         return baseURI;
     }
 
-    function setBaseURI(string memory _newBaseURI) external onlyOwner {
+    function setBaseURI(string memory _newBaseURI) external onlyVault {
         baseURI = _newBaseURI;
     }
 
@@ -72,7 +71,11 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         }
     }
 
-    function setVaultAddress(address _newVaultAddress) external onlyVault {
+    function setVaultAddress(address _newVaultAddress) external onlyOwner {
         vaultAddress = _newVaultAddress;
+    }
+
+    function getVaultAddress() external view returns (address) {
+        return vaultAddress;
     }
 }

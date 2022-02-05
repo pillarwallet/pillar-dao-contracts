@@ -11,6 +11,7 @@ const stakingAmount = ethers.utils.parseEther('10000');
  
  describe('PillarDAO', () => {
    let pillarDAO;
+   let membershipNFT;
    let plrToken;
    
    let owner;
@@ -37,13 +38,22 @@ const stakingAmount = ethers.utils.parseEther('10000');
          plrToken.transferFrom.returns(true);
          plrToken.transfer.returns(true);
 
+         const MembershipNFTFactory = await ethers.getContractFactory('MembershipNFT');
+         membershipNFT = await MembershipNFTFactory.deploy(
+             'PillarDAO Membership',
+             'PillarDAO'
+         );
+         await membershipNFT.deployed();
 
          const DAOFactory = await ethers.getContractFactory('PillarDAO');
          pillarDAO = await DAOFactory.deploy(
              plrToken.address,
-             stakingAmount
+             stakingAmount,
+             membershipNFT.address
          );
          await pillarDAO.deployed();
+         await membershipNFT.setVaultAddress(pillarDAO.address);
+         await pillarDAO.setMembershipURI("ipfs://QmPSdB5ieVnPdmsj68ksAWV3ZmrLjr8ESLNVq6NpG8MsYg/");
      })
      
      it('Deploys without errors', async () => {
