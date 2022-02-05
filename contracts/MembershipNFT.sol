@@ -19,6 +19,16 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         _;
     }
 
+    event Minted (
+        address indexed owner,
+        uint indexed tokenId
+    );
+
+    event Burned (
+        address indexed owner,
+        uint indexed tokenId
+    );
+
     constructor(
         string memory name,
         string memory symbol
@@ -38,11 +48,14 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     function mint(address _to) external onlyVault nonReentrant returns (uint256) {
         uint256 mintIndex = totalSupply().add(1);
         _safeMint(_to, mintIndex);
+        emit Minted(_to, mintIndex);
         return mintIndex;
     }
 
-    function burn(uint256 tokenId) onlyVault external {
-        _burn(tokenId);
+    function burn(uint256 _tokenId) onlyVault external {
+        address owner = ownerOf(_tokenId);
+        _burn(_tokenId);
+        emit Burned(owner,_tokenId);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {

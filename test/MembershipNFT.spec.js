@@ -24,7 +24,6 @@ const { collapseTextChangeRangesAcrossMultipleVersions } = require('typescript')
              'PillarDAO'
          );
          await membershipNFT.deployed();
-         //await membershipNFT.setVaultAddress(owner.address);
      })
      
      it('Deploys without errors', async () => {
@@ -40,7 +39,7 @@ const { collapseTextChangeRangesAcrossMultipleVersions } = require('typescript')
         const tran = await membershipNFT.mint(addr2.address);
         const membershipId = await tran.wait();
         const tokenId = await membershipNFT.balanceOf(addr2.address);
-        expect(membershipId.events.length).to.equal(1);
+        expect(membershipId.events.length).to.equal(2);
         expect(tokenId).to.equal(1);
      });
 
