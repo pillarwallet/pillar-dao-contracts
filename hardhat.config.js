@@ -1,24 +1,23 @@
-require('@nomiclabs/hardhat-waffle');
-require('@nomiclabs/hardhat-etherscan');
-require('hardhat-gas-reporter');
+require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-etherscan");
+require("hardhat-gas-reporter");
 
-const { resolve } = require('path');
-const { config: dotenvConfig  } = require('dotenv');
+const { resolve } = require("path");
+const { config: dotenvConfig } = require("dotenv");
 
-dotenvConfig({ path: resolve(__dirname, './.env') });
+dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 module.exports = {
-  defaultNetwork: 'hardhat',
+  defaultNetwork: "hardhat",
   networks: {
-    hardhat: {
-    },
+    hardhat: {},
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.DEPLOYER_PRIVATE_KEY]
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
     },
     mumbai: {
-        url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
-        accounts: [process.env.DEPLOYER_PRIVATE_KEY],     
+      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
     },
     polygon: {
       url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -26,17 +25,17 @@ module.exports = {
     },
   },
   gasReporter: {
-    currency: 'USD',
-    gasPrice: 100
+    currency: "USD",
+    gasPrice: 100,
   },
   etherscan: {
     apiKey: {
       rinkeby: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYSCAN_API_KEY,
-    }
+    },
   },
   solidity: {
-    version: '0.8.0',
+    version: "0.8.0",
     settings: {
       optimizer: {
         enabled: true,
@@ -44,18 +43,18 @@ module.exports = {
       },
       outputSelection: {
         "*": {
-          "*": ["storageLayout"]
-        }
-      }
+          "*": ["storageLayout"],
+        },
+      },
     },
   },
   paths: {
     sources: "./contracts",
     tests: "./test",
     cache: "./cache",
-    artifacts: "./artifacts"
+    artifacts: "./artifacts",
   },
   mocha: {
-    timeout: 40000
-  }
+    timeout: 40000,
+  },
 };
