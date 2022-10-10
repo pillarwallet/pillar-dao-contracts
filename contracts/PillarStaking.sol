@@ -5,20 +5,19 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {InvalidTokenAddress, MaximumTotalStakeReached, InvalidMinimumStake, InvalidMaximumStake, InsufficientBalance, StakeWouldBeGreaterThanMax, InvalidUnstakeAmount, ProposedMaxStakeTooLow, ProposedMinStakeTooHigh, OnlyWhenInitialized, OnlyWhenStakeable, OnlyWhenStaked, OnlyWhenReadyForUnstake} from "./errors/Errors.sol";
+import {InvalidStakingToken, MaximumTotalStakeReached, InvalidMinimumStake, InvalidMaximumStake, InsufficientBalance, StakeWouldBeGreaterThanMax, InvalidUnstakeAmount, ProposedMaxStakeTooLow, ProposedMinStakeTooHigh, OnlyWhenInitialized, OnlyWhenStakeable, OnlyWhenStaked, OnlyWhenReadyForUnstake} from "./errors/Errors.sol";
 
 contract PillarStaking is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
-    address public tokenAddress;
-    address public rewardsToken;
+    IERC20 public stakingToken;
+    IERC20 public rewardsToken;
     address[] private _stakeholders;
-    mapping(address => uint256) private _balances;
-    // mapping(address => uint256) private _rewards;
-
-    uint256 public minStake = 10000;
-    uint256 public maxStake = 250000;
-    uint256 public maxTotalStake = 7200000;
+    mapping(address => uint256) private _stakingBalances;
+    mapping(address => uint256) private _rewardBalances;
+    uint256 public minStake = 10000e18;
+    uint256 public maxStake = 250000e18;
+    uint256 public maxTotalStake = 7200000e18;
     uint256 public totalStaked;
 
     enum StakingState {
@@ -58,16 +57,14 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         _;
     }
 
-    constructor(address _tokenAddress) {
-        if (_tokenAddress == address(0)) revert InvalidTokenAddress();
-        tokenAddress = _tokenAddress;
+    constructor(address _stakingToken, address _rewardsToken) {
+        if (_stakingToken == address(0)) revert InvalidStakingToken();
+        stakingToken = IERC20(_stakingToken);
+        rewardsToken = IERC20(_rewardsToken);
         setStateInitialized();
     }
 
     function stake(uint256 _amount) external nonReentrant whenStakeable {
-        // check amount is within range of min and max stake
-        // check amount is within total max stake of contract
-        // check amount is within total personal stake limit
         if ((totalStaked + _amount) > maxTotalStake)
             revert MaximumTotalStakeReached({
                 totalMaxStake: maxTotalStake,
@@ -79,40 +76,22 @@ contract PillarStaking is ReentrancyGuard, Ownable {
             revert InvalidMinimumStake({minimumStakeAmount: minStake});
         if (_amount > maxStake)
             revert InvalidMaximumStake({maximumStakeAmount: maxStake});
-        if (_amount > maxStake - _balances[msg.sender])
+        if (_amount > maxStake - _stakingBalances[msg.sender])
             revert StakeWouldBeGreaterThanMax();
-
-        // check staker has enough tokens
-        IERC20 token = IERC20(tokenAddress);
+        IERC20 token = IERC20(stakingToken);
         if (token.balanceOf(msg.sender) < _amount) revert InsufficientBalance();
-
-        // add staked amount to total stake
         totalStaked = totalStaked + _amount;
-
-        // add staked amount to staker balance
-        _balances[msg.sender] = _balances[msg.sender] + _amount;
-
-        // transfer tokens to staking contract
+        _stakingBalances[msg.sender] = _stakingBalances[msg.sender] + _amount;
         token.safeTransferFrom(msg.sender, address(this), _amount);
-
-        // emit event
         emit Staked(msg.sender, _amount);
     }
 
     function unstake() external nonReentrant whenReadyForUnstake {
-        IERC20 token = IERC20(tokenAddress);
-        uint256 stakedBalance = _balances[msg.sender];
-
-        // deduct amount from total staked
+        IERC20 token = IERC20(stakingToken);
+        uint256 stakedBalance = _stakingBalances[msg.sender];
         totalStaked = totalStaked - stakedBalance;
-
-        //deduct from stakers staked balance
-        _balances[msg.sender] = 0;
-
-        // transfer tokens from contract to staker
+        _stakingBalances[msg.sender] = 0;
         token.safeTransfer(msg.sender, stakedBalance);
-
-        //emit event
         emit Unstaked(msg.sender, stakedBalance);
     }
 
@@ -121,11 +100,11 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         view
         returns (uint256 amount)
     {
-        return _balances[account];
+        return _stakingBalances[account];
     }
 
     function updateMinStakeLimit(uint256 _amount)
-        public
+        external
         onlyOwner
         whenStakeable
     {
@@ -139,7 +118,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     }
 
     function updateMaxStakeLimit(uint256 _amount)
-        public
+        external
         onlyOwner
         whenStakeable
     {
@@ -169,7 +148,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         state = StakingState.READY_FOR_UNSTAKE;
     }
 
-    function getStakingState() public view returns (StakingState) {
+    function getContractState() public view returns (StakingState) {
         return state;
     }
 }

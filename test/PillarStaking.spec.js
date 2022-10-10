@@ -37,10 +37,10 @@ describe("PillarStakingContract", () => {
   });
 
   it("Deploys Pillar Staking contract without errors", async () => {
-    const psTokenAddress = await plrStaking.tokenAddress();
+    const psTokenAddress = await plrStaking.stakingToken();
     const psTokenMinStake = await plrStaking.minStake();
     const psTokenMaxStake = await plrStaking.maxStake();
-    const psStakingState = await plrStaking.getStakingState();
+    const psStakingState = await plrStaking.getContractState();
     expect(psTokenAddress).to.equal(plrToken.address);
     expect(psTokenMinStake).to.equal(10000);
     expect(psTokenMaxStake).to.equal(250000);
@@ -230,7 +230,7 @@ describe("PillarStakingContract", () => {
 
   it("setStateStakeable(): Should update staking state from INITIALIZED to STAKEABLE", async () => {
     await plrStaking.connect(owner).setStateStakeable();
-    const newState = await plrStaking.getStakingState();
+    const newState = await plrStaking.getContractState();
     expect(newState).to.equal(1);
   });
 
@@ -243,7 +243,7 @@ describe("PillarStakingContract", () => {
 
   it("setStateStaked(): Should update staking state from INITIALIZED to STAKED", async () => {
     await plrStaking.connect(owner).setStateStaked();
-    const newState = await plrStaking.getStakingState();
+    const newState = await plrStaking.getContractState();
     expect(newState).to.equal(2);
   });
 
@@ -256,7 +256,7 @@ describe("PillarStakingContract", () => {
 
   it("setStateReadyForUnstake(): Should update staking state from INITIALIZED to READY_FOR_UNSTAKE", async () => {
     await plrStaking.connect(owner).setStateReadyForUnstake();
-    const newState = await plrStaking.getStakingState();
+    const newState = await plrStaking.getContractState();
     expect(newState).to.equal(3);
   });
 
@@ -269,7 +269,20 @@ describe("PillarStakingContract", () => {
 
   it("setStateInitialized(): Should set staking state to INITIALIZED", async () => {
     await plrStaking.connect(owner).setStateInitialized();
-    const newState = await plrStaking.getStakingState();
+    const newState = await plrStaking.getContractState();
     expect(newState).to.equal(0);
+  });
+
+  // GET CONTRACT STATE //
+
+  it("getContractState(): Should be initialized with state: INITIALIZED", async () => {
+    const state = await plrStaking.getContractState();
+    expect(state).to.equal(0);
+  });
+
+  it("getContractState(): Should return current contract state: STAKED", async () => {
+    await plrStaking.connect(owner).setStateStaked();
+    const state = await plrStaking.getContractState();
+    expect(state).to.equal(2);
   });
 });

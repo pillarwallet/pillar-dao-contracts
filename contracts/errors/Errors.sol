@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-error InvalidTokenAddress();
+error InvalidStakingToken();
 error InvalidMinimumStake(uint256 minimumStakeAmount);
 error InvalidMaximumStake(uint256 maximumStakeAmount);
 error InsufficientBalance();
