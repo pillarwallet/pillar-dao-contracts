@@ -124,7 +124,11 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         return _balances[account];
     }
 
-    function updateMinStakeLimit(uint256 _amount) public onlyOwner {
+    function updateMinStakeLimit(uint256 _amount)
+        public
+        onlyOwner
+        whenStakeable
+    {
         if (maxStake < _amount)
             revert ProposedMinStakeTooHigh({
                 currentMax: maxStake,
@@ -134,7 +138,11 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         minStake = _amount;
     }
 
-    function updateMaxStakeLimit(uint256 _amount) public onlyOwner {
+    function updateMaxStakeLimit(uint256 _amount)
+        public
+        onlyOwner
+        whenStakeable
+    {
         if (minStake > _amount)
             revert ProposedMaxStakeTooLow({
                 currentMin: minStake,

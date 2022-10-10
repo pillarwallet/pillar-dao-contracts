@@ -20,7 +20,6 @@ describe("PillarStakingContract", () => {
     plrStaking = await PillarStaking.deploy(plrToken.address);
 
     //transfer dPLR tokens to accounts
-    await plrToken.connect(owner).approve(owner.address, 10000000);
     await plrToken.connect(owner).transfer(addr1.address, 1000000);
     await plrToken.connect(owner).transfer(addr2.address, 1000000);
     await plrToken.connect(owner).approve(plrStaking.address, 10000000);
@@ -139,13 +138,22 @@ describe("PillarStakingContract", () => {
   // UPDATING MAX STAKE //
 
   it("updateMaxStakeLimit(): Error checks - should only allow owner to call", async () => {
+    await plrStaking.connect(owner).setStateStakeable();
     await expectRevert(
       plrStaking.connect(addr1).updateMaxStakeLimit(250001),
       "Ownable: caller is not the owner"
     );
   });
 
+  it("updateMaxStakeLimit(): Error checks - should trigger contract state (STAKEABLE) check", async () => {
+    await expectRevert(
+      plrStaking.connect(owner).updateMaxStakeLimit(5000),
+      "OnlyWhenStakeable()"
+    );
+  });
+
   it("updateMaxStakeLimit(): Should allow decreasing of maximum stake", async () => {
+    await plrStaking.connect(owner).setStateStakeable();
     const currentMaxStake = parseInt(await plrStaking.maxStake());
     await plrStaking.updateMinStakeLimit(0);
     await plrStaking.updateMaxStakeLimit(13);
@@ -154,6 +162,7 @@ describe("PillarStakingContract", () => {
   });
 
   it("updateMaxStakeLimit(): Should allow increasing of maximum stake", async () => {
+    await plrStaking.connect(owner).setStateStakeable();
     const currentMaxStake = parseInt(await plrStaking.maxStake());
     await plrStaking.updateMaxStakeLimit(331313);
     const higherMaxStake = parseInt(await plrStaking.maxStake());
@@ -163,13 +172,22 @@ describe("PillarStakingContract", () => {
   // UPDATING MIN STAKE //
 
   it("updateMinStakeLimit(): Error checks - should only allow owner to call", async () => {
+    await plrStaking.connect(owner).setStateStakeable();
     await expectRevert(
       plrStaking.connect(addr1).updateMinStakeLimit(5000),
       "Ownable: caller is not the owner"
     );
   });
 
+  it("updateMinStakeLimit(): Error checks - should trigger contract state (STAKEABLE) check", async () => {
+    await expectRevert(
+      plrStaking.connect(owner).updateMinStakeLimit(5000),
+      "OnlyWhenStakeable()"
+    );
+  });
+
   it("updateMinStakeLimit(): Should allow decreasing of minimum stake", async () => {
+    await plrStaking.connect(owner).setStateStakeable();
     const currentMinStake = parseInt(await plrStaking.minStake());
     await plrStaking.updateMinStakeLimit(13);
     const lowerMinStake = parseInt(await plrStaking.minStake());
@@ -177,6 +195,7 @@ describe("PillarStakingContract", () => {
   });
 
   it("updateMinStakeLimit(): Should allow increasing of minimum stake", async () => {
+    await plrStaking.connect(owner).setStateStakeable();
     const currentMinStake = parseInt(await plrStaking.minStake());
     await plrStaking.updateMinStakeLimit(13131);
     const higherMinStake = parseInt(await plrStaking.minStake());
