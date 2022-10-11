@@ -1,23 +1,57 @@
-const { ethers, run } = require('hardhat')
+const hre = require("hardhat");
 
-const stakingToken = '0xdd3122831728404a7234e5981677a5fd0a9727fe'; //rinkeby PLR token
-const stakingAmount = ethers.utils.parseEther("10000")
-const main = async () => {
-  await run('compile');
+async function main() {
+  const [deployer] = await ethers.getSigners();
 
-  const values = [
-    stakingToken,
-    stakingAmount,
-  ];
+  console.log("Deploying contracts with the account:", deployer.address);
+  console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  const PillarDAOFactory = await ethers.getContractFactory('PillarDAO');
+  // Deploy Membership NFT contract
+  const name = "Pillar DAO NFT";
+  const symbol = "PLR DAO";
+
+  const MembershipNFT = await ethers.getContractFactory("MembershipNFT");
+  const membershipNFT = await MembershipNFT.deploy(name, symbol);
+  await membershipNFT.deployed();
+  console.log("MembershipNFT address:", membershipNFT.address);
+
+  // Wait for 5 block transactions to ensure deployment before verifying
+  await membershipNFT.deployTransaction.wait(5);
+
+  // Verify contract on Etherscan
+  await hre.run("verify:verify", {
+    address: membershipNFT.address,
+    contract: "contracts/MembershipNFT.sol:MembershipNFT",
+    constructorArguments: [name, symbol],
+  });
+
+  // Deploy PillarDAO contract
+  const stakingToken = "0x267c85113BAfbBe829918fB4c23135af72c9C472"; // Goerli PLR token
+  const stakingAmount = ethers.utils.parseEther("10000");
+
+  const values = [stakingToken, stakingAmount, membershipNFT.address];
+
+  const PillarDAOFactory = await ethers.getContractFactory("PillarDAO");
   const pillarDaoContract = await PillarDAOFactory.deploy(...values);
   await pillarDaoContract.deployed();
 
-  console.log('Deployed to address with values: ', pillarDaoContract.address, ...values);
+  console.log(
+    "Deployed to address with values: ",
+    pillarDaoContract.address,
+    ...values
+  );
+
+  // Wait for 5 block transactions to ensure deployment before verifying
+  await pillarDaoContract.deployTransaction.wait(5);
+
+  // Verify contract on Etherscan
+  await hre.run("verify:verify", {
+    address: pillarDaoContract.address,
+    contract: "contracts/PillarDAO.sol:PillarDAO",
+    constructorArguments: [...values],
+  });
 }
 
-// Hardhat recommends this pattern to be able to use async/await everywhere and properly handle errors.
 main()
   .then(() => process.exit(0))
   .catch((error) => {
