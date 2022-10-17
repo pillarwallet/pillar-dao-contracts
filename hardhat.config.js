@@ -4,6 +4,7 @@ require("hardhat-gas-reporter");
 require("hardhat-tracer");
 require("solidity-coverage");
 
+
 const { resolve } = require("path");
 const { config: dotenvConfig } = require("dotenv");
 
@@ -13,18 +14,22 @@ module.exports = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
-    // rinkeby: {
-    //   url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   accounts: [process.env.DEPLOYER_PRIVATE_KEY]
-    // },
-    // mumbai: {
-    //     url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //     accounts: [process.env.DEPLOYER_PRIVATE_KEY],
-    // },
-    // polygon: {
-    //   url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   accounts: [process.env.DEPLOYER_PRIVATE_KEY],
-    // },
+    rinkeby: {
+      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+    },
+    mumbai: {
+      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+    },
+    polygon: {
+      url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+    },
+    goerli: {
+      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+    },
   },
   gasReporter: {
     currency: "USD",
@@ -34,6 +39,7 @@ module.exports = {
     apiKey: {
       rinkeby: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYSCAN_API_KEY,
+      goerli: process.env.ETHERSCAN_API_KEY,
     },
   },
   solidity: {
@@ -65,6 +71,20 @@ module.exports = {
         },
       },
     ],
+  },
+  solidity: {
+    version: "0.8.0",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 10000,
+      },
+      outputSelection: {
+        "*": {
+          "*": ["storageLayout"],
+        },
+      },
+    },
   },
   paths: {
     sources: "./contracts",
