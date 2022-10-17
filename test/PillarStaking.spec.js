@@ -1,7 +1,10 @@
-const { ethers, waffle } = require("hardhat");
+const { ethers } = require("hardhat");
 const { expect } = require("chai");
-const { smock } = require("@defi-wonderland/smock");
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { expectRevert } = require("@openzeppelin/test-helpers");
+
+const elevenDays = 11 * 24 * 60 * 60;
+const oneYearOneWeek = 53 * 7 * 24 * 60 * 60;
 
 describe("PillarStakingContract", () => {
   let plrToken, plrStaking, owner, addr1, addr2, addr3;
@@ -11,278 +14,604 @@ describe("PillarStakingContract", () => {
   });
 
   beforeEach(async () => {
+    // deploy DummyWETHToken contract
+    const WETHToken = await ethers.getContractFactory("DummyWETHToken");
+    wethToken = await WETHToken.deploy();
+
     // deploy DummyPillarToken contract
     const PillarToken = await ethers.getContractFactory("DummyPillarToken");
     plrToken = await PillarToken.deploy();
 
     // deploy PillarStaking contract
     const PillarStaking = await ethers.getContractFactory("PillarStaking");
-    plrStaking = await PillarStaking.deploy(plrToken.address);
-
-    //transfer dPLR tokens to accounts
-    await plrToken.connect(owner).transfer(addr1.address, 1000000);
-    await plrToken.connect(owner).transfer(addr2.address, 1000000);
-    await plrToken.connect(owner).approve(plrStaking.address, 10000000);
-    await plrToken.connect(addr1).approve(plrStaking.address, 1000000);
-    await plrToken.connect(addr2).approve(plrStaking.address, 1000000);
-  });
-
-  it("Deploys Pillar Token without errors", async () => {
-    const ptName = await plrToken.name();
-    const ptSymbol = await plrToken.symbol();
-    const ptTotalSupply = await plrToken.totalSupply();
-    expect(ptName).to.equal("DummyPillarToken");
-    expect(ptSymbol).to.equal("dPLR");
-    expect(ptTotalSupply).to.equal(ethers.utils.parseEther("1000000000"));
-  });
-
-  it("Deploys Pillar Staking contract without errors", async () => {
-    const psTokenAddress = await plrStaking.stakingToken();
-    const psTokenMinStake = await plrStaking.minStake();
-    const psTokenMaxStake = await plrStaking.maxStake();
-    const psStakingState = await plrStaking.getContractState();
-    expect(psTokenAddress).to.equal(plrToken.address);
-    expect(psTokenMinStake).to.equal(10000);
-    expect(psTokenMaxStake).to.equal(250000);
-    expect(psStakingState).to.equal(0);
-  });
-
-  // STAKING //
-  it("stake(): Error checks - should trigger contract state (STAKEABLE) check", async () => {
-    await expectRevert(
-      plrStaking.connect(addr1).stake(9999),
-      "OnlyWhenStakeable"
-    );
-  });
-
-  it("stake(): Error checks - should trigger minimum stake amount check", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    await expectRevert(
-      plrStaking.connect(addr1).stake(9999),
-      "InvalidMinimumStake(10000)"
-    );
-  });
-
-  it("stake(): Error checks - should trigger maximum stake amount check", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    await expectRevert(
-      plrStaking.connect(addr1).stake(250001),
-      "InvalidMaximumStake(250000)"
-    );
-  });
-
-  it("stake(): Error checks - should trigger maximum personal stake amount check", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    await plrStaking.connect(addr1).stake(240000);
-    await expectRevert(
-      plrStaking.connect(addr1).stake(10001),
-      "StakeWouldBeGreaterThanMax()"
-    );
-  });
-
-  it("stake(): Error checks - should trigger maximum total stake reached amount check", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    await plrStaking.connect(owner).updateMaxStakeLimit(7199999);
-    await plrStaking.connect(owner).stake(7199999);
-
-    await expectRevert(
-      plrStaking.connect(addr1).stake(10000),
-      "MaximumTotalStakeReached(7200000, 7199999, 1, 10000)"
-    );
-  });
-
-  it("stake(): Should allow users to stake within specified limits", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    const stakeAmount = 13131;
-    const addr1Balance = await plrToken.balanceOf(addr1.address);
-    await plrStaking.connect(addr1).stake(stakeAmount);
-    expect(await plrStaking.totalStaked()).to.equal(stakeAmount);
-    expect(await plrToken.balanceOf(addr1.address)).to.equal(
-      addr1Balance - stakeAmount
-    );
-    expect(await plrToken.balanceOf(plrStaking.address)).to.equal(stakeAmount);
-    expect(await plrStaking.getStakedAmountForAccount(addr1.address)).to.equal(
-      13131
-    );
-  });
-
-  // UNSTAKING //
-  it("stake(): Error checks - should trigger contract state (READY_FOR_UNSTAKE) check", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    await plrStaking.connect(addr1).stake(10000);
-    await expectRevert(
-      plrStaking.connect(addr1).unstake(),
-      "OnlyWhenReadyForUnstake"
-    );
-  });
-
-  it("unstake(): Should allow users to unstake their total staked balance", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    const stakeAmount = 13131;
-    await plrStaking.connect(addr1).stake(stakeAmount);
-    expect(await plrStaking.totalStaked()).to.equal(stakeAmount);
-    expect(await plrToken.balanceOf(plrStaking.address)).to.equal(stakeAmount);
-    expect(await plrStaking.getStakedAmountForAccount(addr1.address)).to.equal(
-      stakeAmount
-    );
-
-    await plrStaking.connect(owner).setStateReadyForUnstake();
-    await plrStaking.connect(addr1).unstake();
-    expect(await plrStaking.totalStaked()).to.equal(0);
-    expect(await plrToken.balanceOf(plrStaking.address)).to.equal(0);
-    expect(await plrStaking.getStakedAmountForAccount(addr1.address)).to.equal(
+    plrStaking = await PillarStaking.deploy(
+      plrToken.address,
+      wethToken.address,
       0
     );
+
+    //transfer dPLR & dWETH tokens to accounts
+    await plrToken
+      .connect(owner)
+      .transfer(addr1.address, ethers.utils.parseEther("1000000"));
+    await plrToken
+      .connect(owner)
+      .transfer(addr2.address, ethers.utils.parseEther("1000000"));
+    await plrToken
+      .connect(owner)
+      .approve(plrStaking.address, ethers.utils.parseEther("10000000"));
+    await plrToken
+      .connect(addr1)
+      .approve(plrStaking.address, ethers.utils.parseEther("1000000"));
+    await plrToken
+      .connect(addr2)
+      .approve(plrStaking.address, ethers.utils.parseEther("1000000"));
   });
 
-  // UPDATING MAX STAKE //
+  // DEPLOYMENT //
+  describe("Deployment", () => {
+    it("Deploys Pillar Token without errors", async () => {
+      const ptName = await plrToken.name();
+      const ptSymbol = await plrToken.symbol();
+      const ptTotalSupply = await plrToken.totalSupply();
+      expect(ptName).to.equal("DummyPillarToken");
+      expect(ptSymbol).to.equal("dPLR");
+      expect(ptTotalSupply).to.equal(ethers.utils.parseEther("1000000000"));
+    });
 
-  it("updateMaxStakeLimit(): Error checks - should only allow owner to call", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    await expectRevert(
-      plrStaking.connect(addr1).updateMaxStakeLimit(250001),
-      "Ownable: caller is not the owner"
-    );
+    it("Deploys WETH Token without errors", async () => {
+      const wethName = await wethToken.name();
+      const wethSymbol = await wethToken.symbol();
+      const wethTotalSupply = await wethToken.totalSupply();
+      expect(wethName).to.equal("DummyWETHToken");
+      expect(wethSymbol).to.equal("dWETH");
+      expect(wethTotalSupply).to.equal(ethers.utils.parseEther("1000000000"));
+    });
+
+    it("Deploys Pillar Staking contract without errors", async () => {
+      const psTokenAddress = await plrStaking.stakingToken();
+      const psTokenMinStake = await plrStaking.minStake();
+      const psTokenMaxStake = await plrStaking.maxStake();
+      const psTokenMaxTotalStake = await plrStaking.maxTotalStake();
+      const psStakingState = await plrStaking.getContractState();
+      const psStakingToken = await plrStaking.stakingToken();
+      const psRewardToken = await plrStaking.rewardToken();
+      expect(psTokenAddress).to.equal(plrToken.address);
+      expect(psTokenMinStake).to.equal(ethers.utils.parseEther("10000"));
+      expect(psTokenMaxStake).to.equal(ethers.utils.parseEther("250000"));
+      expect(psTokenMaxTotalStake).to.equal(ethers.utils.parseEther("7200000"));
+      expect(psStakingState).to.equal(0);
+      expect(psStakingToken).to.equal(plrToken.address);
+      expect(psRewardToken).to.equal(wethToken.address);
+    });
   });
 
-  it("updateMaxStakeLimit(): Error checks - should trigger contract state (STAKEABLE) check", async () => {
-    await expectRevert(
-      plrStaking.connect(owner).updateMaxStakeLimit(5000),
-      "OnlyWhenStakeable()"
-    );
+  describe("Staking PLR", () => {
+    it("stake(): Should allow users to stake within specified limits", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const stakeAmount = "13131000000000000000000"; // 13,131 PLR
+      const addr1Balance = await plrToken.balanceOf(addr1.address);
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      expect(await plrStaking.totalStaked()).to.equal(stakeAmount);
+      expect(await plrToken.balanceOf(plrStaking.address)).to.equal(
+        stakeAmount
+      );
+      expect(
+        await plrStaking.getStakedAmountForAccount(addr1.address)
+      ).to.equal(stakeAmount);
+    });
   });
 
-  it("updateMaxStakeLimit(): Should allow decreasing of maximum stake", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    const currentMaxStake = parseInt(await plrStaking.maxStake());
-    await plrStaking.updateMinStakeLimit(0);
-    await plrStaking.updateMaxStakeLimit(13);
-    const lowerMaxStake = parseInt(await plrStaking.maxStake());
-    expect(lowerMaxStake).to.equal(currentMaxStake - 249987);
+  describe("Unstaking PLR and earning rewards", () => {
+    it("unstake(): Should allow a user to unstake their total staked balance and earned rewards", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      expect(await plrStaking.totalStaked()).to.equal(stakeAmount);
+      expect(await plrToken.balanceOf(plrStaking.address)).to.equal(
+        stakeAmount
+      );
+      expect(
+        await plrStaking.getStakedAmountForAccount(addr1.address)
+      ).to.equal(stakeAmount);
+      await time.increase(elevenDays);
+      await plrStaking.connect(owner).setStateStaked();
+      await time.increase(oneYearOneWeek);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await wethToken
+        .connect(owner)
+        .transfer(plrStaking.address, ethers.utils.parseEther("71"));
+      await plrStaking.calculateRewardAllocation();
+      expect(
+        await plrStaking.getRewardAmountForAccount(addr1.address)
+      ).to.equal(ethers.utils.parseEther("71")); // 100.00% - only one staker so 100% rewards
+      await plrStaking.connect(addr1).unstake();
+
+      expect(await plrStaking.totalStaked()).to.equal(0);
+      expect(await plrToken.balanceOf(plrStaking.address)).to.equal(0);
+      expect(
+        await plrStaking.getStakedAmountForAccount(addr1.address)
+      ).to.equal(0);
+      expect(
+        await plrStaking.getRewardAmountForAccount(addr1.address)
+      ).to.equal(0);
+      expect(await wethToken.balanceOf(addr1.address)).to.equal(
+        ethers.utils.parseEther("71")
+      ); // 100% of reward as only staker
+    });
+
+    it("unstake(): Should allow multiple users to unstake their total staked balance and earned rewards", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const stakeAmount1 = "10000000000000000000000"; // 10,000 PLR;;
+      const stakeAmount2 = "20000000000000000000000"; // 20,000 PLR;;
+      await plrStaking.connect(addr1).stake(stakeAmount1);
+      await plrStaking.connect(addr2).stake(stakeAmount2);
+      expect(
+        await plrStaking.getStakedAmountForAccount(addr1.address)
+      ).to.equal(stakeAmount1);
+      expect(
+        await plrStaking.getStakedAmountForAccount(addr2.address)
+      ).to.equal(stakeAmount2);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await wethToken
+        .connect(owner)
+        .transfer(plrStaking.address, ethers.utils.parseEther("63"));
+      await plrStaking.calculateRewardAllocation();
+      expect(
+        await plrStaking.getRewardAmountForAccount(addr1.address)
+      ).to.equal(ethers.utils.parseEther("20.9979")); // 33.33.%
+      expect(
+        await plrStaking.getRewardAmountForAccount(addr2.address)
+      ).to.equal(ethers.utils.parseEther("41.9958")); // 66.66.%
+      await plrStaking.connect(addr1).unstake();
+      await plrStaking.connect(addr2).unstake();
+      expect(await plrStaking.totalStaked()).to.equal(0);
+      expect(await plrToken.balanceOf(plrStaking.address)).to.equal(0);
+      expect(
+        await plrStaking.getStakedAmountForAccount(addr1.address)
+      ).to.equal(0);
+      expect(
+        await plrStaking.getRewardAmountForAccount(addr1.address)
+      ).to.equal(0);
+      expect(
+        await plrStaking.getStakedAmountForAccount(addr2.address)
+      ).to.equal(0);
+      expect(
+        await plrStaking.getRewardAmountForAccount(addr2.address)
+      ).to.equal(0);
+      expect(await wethToken.balanceOf(addr1.address)).to.equal(
+        ethers.utils.parseEther("20.9979")
+      );
+      expect(await wethToken.balanceOf(addr2.address)).to.equal(
+        ethers.utils.parseEther("41.9958")
+      );
+    });
   });
 
-  it("updateMaxStakeLimit(): Should allow increasing of maximum stake", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    const currentMaxStake = parseInt(await plrStaking.maxStake());
-    await plrStaking.updateMaxStakeLimit(331313);
-    const higherMaxStake = parseInt(await plrStaking.maxStake());
-    expect(higherMaxStake).to.equal(currentMaxStake + 81313);
+  describe("Updating max stake limit", () => {
+    it("updateMaxStakeLimit(): Should allow decreasing of maximum stake", async () => {
+      const minStake = "0"; // 0 PLR
+      const newMaxStake = "13000000000000000000"; // 13 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.updateMinStakeLimit(minStake);
+      await plrStaking.updateMaxStakeLimit(newMaxStake);
+      const lowerMaxStake = await plrStaking.maxStake();
+      expect(lowerMaxStake.toString()).to.equal(newMaxStake);
+    });
+
+    it("updateMaxStakeLimit(): Should allow increasing of maximum stake", async () => {
+      const newMaxStake = "331313000000000000000000"; // 331,313 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.updateMaxStakeLimit(newMaxStake);
+      const higherMaxStake = await plrStaking.maxStake();
+      expect(higherMaxStake.toString()).to.equal(newMaxStake);
+    });
   });
 
-  // UPDATING MIN STAKE //
+  describe("Updating min stake limit", () => {
+    it("updateMinStakeLimit(): Should allow decreasing of minimum stake", async () => {
+      const newMinStake = "13000000000000000000"; // 13 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.updateMinStakeLimit(newMinStake);
+      const lowerMinStake = await plrStaking.minStake();
+      expect(lowerMinStake.toString()).to.equal(newMinStake);
+    });
 
-  it("updateMinStakeLimit(): Error checks - should only allow owner to call", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    await expectRevert(
-      plrStaking.connect(addr1).updateMinStakeLimit(5000),
-      "Ownable: caller is not the owner"
-    );
+    it("updateMinStakeLimit(): Should allow increasing of minimum stake", async () => {
+      const newMinStake = "13131000000000000000000"; // 13,131 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.updateMinStakeLimit(newMinStake);
+      const higherMinStake = await plrStaking.minStake();
+      expect(higherMinStake.toString()).to.equal(newMinStake);
+    });
   });
 
-  it("updateMinStakeLimit(): Error checks - should trigger contract state (STAKEABLE) check", async () => {
-    await expectRevert(
-      plrStaking.connect(owner).updateMinStakeLimit(5000),
-      "OnlyWhenStakeable()"
-    );
+  describe("Viewing staked amount", () => {
+    it("getStakedAmountForAccount(): Should return zero for a user that has not staked", async () => {
+      expect(
+        await plrStaking.getStakedAmountForAccount(addr2.address)
+      ).to.equal(0);
+    });
+
+    it("getStakedAmountForAccount(): Should return staked amount for a user that has staked", async () => {
+      const stake1 = "10000000000000000000000"; // 10,000 PLR
+      const stake2 = "15000000000000000000000"; // 15,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stake1);
+      await plrStaking.connect(addr1).stake(stake2);
+      const totalStaked = await plrStaking.getStakedAmountForAccount(
+        addr1.address
+      );
+      expect(totalStaked.toString()).to.equal("25000000000000000000000");
+    });
   });
 
-  it("updateMinStakeLimit(): Should allow decreasing of minimum stake", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    const currentMinStake = parseInt(await plrStaking.minStake());
-    await plrStaking.updateMinStakeLimit(13);
-    const lowerMinStake = parseInt(await plrStaking.minStake());
-    expect(lowerMinStake).to.equal(currentMinStake - 9987);
+  describe("Viewing reward amount", () => {
+    it("getRewardAmountForAccount(): Should return zero if rewards have not been calculated", async () => {
+      const stake = "15000000000000000000000"; // 15,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stake);
+      expect(
+        await plrStaking.getRewardAmountForAccount(addr1.address)
+      ).to.equal(0);
+    });
+
+    it("getRewardAmountForAccount(): Should return reward amount for a user that has staked", async () => {
+      const stake = "10000000000000000000000"; // 10,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stake);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await wethToken
+        .connect(owner)
+        .transfer(plrStaking.address, ethers.utils.parseEther("10000"));
+      await plrStaking.calculateRewardAllocation();
+      const reward = await plrStaking.getRewardAmountForAccount(addr1.address);
+      expect(reward.toString()).to.equal("10000000000000000000000"); // 100% - 10,000 WETH
+    });
   });
 
-  it("updateMinStakeLimit(): Should allow increasing of minimum stake", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    const currentMinStake = parseInt(await plrStaking.minStake());
-    await plrStaking.updateMinStakeLimit(13131);
-    const higherMinStake = parseInt(await plrStaking.minStake());
-    expect(higherMinStake).to.equal(currentMinStake + 3131);
+  describe("Updating/viewing contract state", () => {
+    it("setStateStakeable(): Should update staking state from INITIALIZED to STAKEABLE", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const newState = await plrStaking.getContractState();
+      expect(newState).to.equal(1);
+    });
+
+    it("setStateStaked(): Should update staking state from INITIALIZED to STAKED", async () => {
+      await plrStaking.connect(owner).setStateStaked();
+      const newState = await plrStaking.getContractState();
+      expect(newState).to.equal(2);
+    });
+
+    it("setStateReadyForUnstake(): Should update staking state from INITIALIZED to READY_FOR_UNSTAKE", async () => {
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      const newState = await plrStaking.getContractState();
+      expect(newState).to.equal(3);
+    });
+
+    it("setStateInitialized(): Should set staking state to INITIALIZED", async () => {
+      await plrStaking.connect(owner).setStateInitialized();
+      const newState = await plrStaking.getContractState();
+      expect(newState).to.equal(0);
+    });
+
+    it("getContractState(): Should be initialized with state: INITIALIZED", async () => {
+      const state = await plrStaking.getContractState();
+      expect(state).to.equal(0);
+    });
+
+    it("getContractState(): Should return current contract state: STAKED", async () => {
+      await plrStaking.connect(owner).setStateStaked();
+      const state = await plrStaking.getContractState();
+      expect(state).to.equal(2);
+    });
   });
 
-  // GET USER STAKED BALANCES //
+  // CALCULATING REWARD ALLOCATIONS //
 
-  it("getStakedAmountForAccount(): Should return zero for a user that has not staked", async () => {
-    expect(await plrStaking.getStakedAmountForAccount(addr2.address)).to.equal(
-      0
-    );
+  describe("Allocation of rewards", () => {
+    it("calculateRewardAllocation(): Should calculate the correct amount of rewards for stakers", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking
+        .connect(owner)
+        .updateMaxStakeLimit(ethers.utils.parseEther("1000000"));
+      await plrStaking.connect(addr1).stake(ethers.utils.parseEther("65432")); // 73.79 ether
+      await plrStaking.connect(addr2).stake(ethers.utils.parseEther("23232")); // 26.20 ether
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await wethToken
+        .connect(owner)
+        .transfer(plrStaking.address, ethers.utils.parseEther("100"));
+      await plrStaking.connect(owner).calculateRewardAllocation();
+      const addr1Rewards = await plrStaking.getRewardAmountForAccount(
+        addr1.address
+      );
+      const addr2Rewards = await plrStaking.getRewardAmountForAccount(
+        addr2.address
+      );
+      expect(addr1Rewards.toString()).to.equal(
+        ethers.utils.parseEther("73.79")
+      );
+      expect(addr2Rewards.toString()).to.equal(
+        ethers.utils.parseEther("26.20")
+      );
+    });
   });
 
-  it("getStakedAmountForAccount(): Should return staked amount for a user that has staked", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    await plrStaking.connect(addr1).stake(10000);
-    await plrStaking.connect(addr1).stake(15000);
-    expect(await plrStaking.getStakedAmountForAccount(addr1.address)).to.equal(
-      25000
-    );
+  describe("Function permissions", () => {
+    it("calculateRewardAllocation(): Error checks - should only allow owner to call", async () => {
+      await expectRevert(
+        plrStaking.connect(addr1).calculateRewardAllocation(),
+        "Ownable: caller is not the owner"
+      );
+    });
+
+    it("setStateInitialized(): Error checks - should only allow owner to call", async () => {
+      await expectRevert(
+        plrStaking.connect(addr1).setStateInitialized(),
+        "Ownable: caller is not the owner"
+      );
+    });
+
+    it("setStateStakeable(): Error checks - should only allow owner to call", async () => {
+      await expectRevert(
+        plrStaking.connect(addr1).setStateStakeable(),
+        "Ownable: caller is not the owner"
+      );
+    });
+
+    it("setStateStakeable(): Error checks - should only allow owner to call", async () => {
+      await expectRevert(
+        plrStaking.connect(addr1).setStateStakeable(),
+        "Ownable: caller is not the owner"
+      );
+    });
+
+    it("setStateReadyForUnstake(): Error checks - should only allow owner to call", async () => {
+      await expectRevert(
+        plrStaking.connect(addr1).setStateReadyForUnstake(),
+        "Ownable: caller is not the owner"
+      );
+    });
+
+    it("updateMinStakeLimit(): Error checks - should only allow owner to call", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      await expectRevert(
+        plrStaking.connect(addr1).updateMinStakeLimit(5000),
+        "Ownable: caller is not the owner"
+      );
+    });
+
+    it("updateMaxStakeLimit(): Error checks - should only allow owner to call", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      await expectRevert(
+        plrStaking.connect(addr1).updateMaxStakeLimit(250001),
+        "Ownable: caller is not the owner"
+      );
+    });
   });
 
-  // MODIFYING STAKING STATE //
+  describe("Contract state checks", () => {
+    it("stake(): Error checks - should trigger contract state (STAKEABLE) check", async () => {
+      await expectRevert(
+        plrStaking.connect(addr1).stake(9999),
+        "OnlyWhenStakeable"
+      );
+    });
 
-  it("setStateStakeable(): Error checks - should only allow owner to call", async () => {
-    await expectRevert(
-      plrStaking.connect(addr1).setStateStakeable(),
-      "Ownable: caller is not the owner"
-    );
+    it("unstake(): Error checks - should trigger contract state (READY_FOR_UNSTAKE) check", async () => {
+      const stake = "10000000000000000000000"; // 10,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stake);
+      await expectRevert(
+        plrStaking.connect(addr1).unstake(),
+        "OnlyWhenReadyForUnstake"
+      );
+    });
+
+    it("updateMinStakeLimit(): Error checks - should trigger contract state (STAKEABLE) check", async () => {
+      await expectRevert(
+        plrStaking.connect(owner).updateMinStakeLimit(5000),
+        "OnlyWhenStakeable()"
+      );
+    });
+
+    it("updateMaxStakeLimit(): Error checks - should trigger contract state (STAKEABLE) check", async () => {
+      await expectRevert(
+        plrStaking.connect(owner).updateMaxStakeLimit(5000),
+        "OnlyWhenStakeable()"
+      );
+    });
   });
 
-  it("setStateStakeable(): Should update staking state from INITIALIZED to STAKEABLE", async () => {
-    await plrStaking.connect(owner).setStateStakeable();
-    const newState = await plrStaking.getContractState();
-    expect(newState).to.equal(1);
+  describe("Events", () => {
+    it("stake(): Should emit an event on successful staking", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const stakeAmount = "13131000000000000000000"; // 13,131 PLR
+      await expect(plrStaking.connect(addr1).stake(stakeAmount))
+        .to.emit(plrStaking, "Staked")
+        .withArgs(addr1.address, stakeAmount);
+    });
+
+    it("unstake(): Should emit an Unstaked event on unstaking", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await wethToken
+        .connect(owner)
+        .transfer(plrStaking.address, ethers.utils.parseEther("71"));
+      await plrStaking.calculateRewardAllocation();
+      await expect(plrStaking.connect(addr1).unstake())
+        .to.emit(plrStaking, "Unstaked")
+        .withArgs(addr1.address, stakeAmount);
+    });
+
+    it("unstake(): Should emit an RewardPaid event on unstaking", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await wethToken
+        .connect(owner)
+        .transfer(plrStaking.address, ethers.utils.parseEther("71"));
+      await plrStaking.calculateRewardAllocation();
+      const rewardAmount = await plrStaking.getRewardAmountForAccount(
+        addr1.address
+      );
+      await expect(plrStaking.connect(addr1).unstake())
+        .to.emit(plrStaking, "RewardPaid")
+        .withArgs(addr1.address, rewardAmount);
+    });
+
+    it("updateMinStakeLimit(): Should emit an MinStakeAmountUpdated event", async () => {
+      const newMinStake = "13131000000000000000000"; // 13,131 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await expect(plrStaking.updateMinStakeLimit(newMinStake))
+        .to.emit(plrStaking, "MinStakeAmountUpdated")
+        .withArgs(newMinStake);
+    });
+
+    it("updateMaxStakeLimit(): Should emit an MaxStakeAmountUpdated event", async () => {
+      const newMaxStake = "331313000000000000000000"; // 331,313 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await expect(plrStaking.updateMaxStakeLimit(newMaxStake))
+        .to.emit(plrStaking, "MaxStakeAmountUpdated")
+        .withArgs(newMaxStake);
+    });
+
+    it("setState<contract-state>(): Should emit ContractStateUpdated event", async () => {
+      await expect(plrStaking.connect(owner).setStateInitialized())
+        .to.emit(plrStaking, "ContractStateUpdated")
+        .withArgs(0);
+      await expect(plrStaking.connect(owner).setStateStakeable())
+        .to.emit(plrStaking, "ContractStateUpdated")
+        .withArgs(1);
+      await time.increase(elevenDays);
+      await expect(plrStaking.connect(owner).setStateStaked())
+        .to.emit(plrStaking, "ContractStateUpdated")
+        .withArgs(2);
+      await time.increase(oneYearOneWeek);
+      await expect(plrStaking.connect(owner).setStateReadyForUnstake())
+        .to.emit(plrStaking, "ContractStateUpdated")
+        .withArgs(3);
+    });
   });
 
-  it("setStateStaked(): Error checks - should only allow owner to call", async () => {
-    await expectRevert(
-      plrStaking.connect(addr1).setStateStaked(),
-      "Ownable: caller is not the owner"
-    );
-  });
+  describe("Custom errors", () => {
+    it("stake(): Error checks - should not allow users to stake when state is STAKED", async () => {
+      const stake = "10000000000000000000000"; // 10,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stake);
+      await time.increase(elevenDays);
+      await plrStaking.connect(owner).setStateStaked();
+      await expectRevert(
+        plrStaking.connect(addr1).stake(stake),
+        "OnlyWhenStakeable()"
+      );
+    });
 
-  it("setStateStaked(): Should update staking state from INITIALIZED to STAKED", async () => {
-    await plrStaking.connect(owner).setStateStaked();
-    const newState = await plrStaking.getContractState();
-    expect(newState).to.equal(2);
-  });
+    it("stake(): Error checks - should not allow users to stake when staking period has passed", async () => {
+      const stake = "10000000000000000000000"; // 10,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stake);
+      await time.increase(elevenDays);
+      await expectRevert(
+        plrStaking.connect(addr1).stake(stake),
+        "StakingPeriodPassed()"
+      );
+    });
 
-  it("setStateReadyForUnstake(): Error checks - should only allow owner to call", async () => {
-    await expectRevert(
-      plrStaking.connect(addr1).setStateReadyForUnstake(),
-      "Ownable: caller is not the owner"
-    );
-  });
+    it("stake(): Error checks - should not allow users to stake when the staking period has ended", async () => {
+      const stake = "10000000000000000000000"; // 10,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await time.increase(elevenDays);
+      await expectRevert(
+        plrStaking.connect(addr1).stake(stake),
+        "StakingPeriodPassed()"
+      );
+    });
 
-  it("setStateReadyForUnstake(): Should update staking state from INITIALIZED to READY_FOR_UNSTAKE", async () => {
-    await plrStaking.connect(owner).setStateReadyForUnstake();
-    const newState = await plrStaking.getContractState();
-    expect(newState).to.equal(3);
-  });
+    it("stake(): Error checks - should trigger minimum stake amount check", async () => {
+      const invalidStake = "9999000000000000000000"; // 9,999 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await expectRevert(
+        plrStaking.connect(addr1).stake(invalidStake),
+        "InvalidMinimumStake(10000000000000000000000)"
+      );
+    });
 
-  it("setStateInitialized(): Error checks - should only allow owner to call", async () => {
-    await expectRevert(
-      plrStaking.connect(addr1).setStateInitialized(),
-      "Ownable: caller is not the owner"
-    );
-  });
+    it("stake(): Error checks - should trigger maximum stake amount check", async () => {
+      const invalidStake = "250001000000000000000000"; // 250,001 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await expectRevert(
+        plrStaking.connect(addr1).stake(invalidStake),
+        "InvalidMaximumStake(250000000000000000000000)"
+      );
+    });
 
-  it("setStateInitialized(): Should set staking state to INITIALIZED", async () => {
-    await plrStaking.connect(owner).setStateInitialized();
-    const newState = await plrStaking.getContractState();
-    expect(newState).to.equal(0);
-  });
+    it("stake(): Error checks - should trigger insufficient balance check", async () => {
+      const invalidStake = "10000000000000000000000"; // 10,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await expectRevert(
+        plrStaking.connect(addr3).stake(invalidStake),
+        "InsufficientBalance()"
+      );
+    });
 
-  // GET CONTRACT STATE //
+    it("stake(): Error checks - should trigger maximum personal stake amount check", async () => {
+      const initialStake = "240000000000000000000000"; // 240,000 PLR
+      const invalidStake = "10001000000000000000000"; // 10,001 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(initialStake);
+      await expectRevert(
+        plrStaking.connect(addr1).stake(invalidStake),
+        "StakeWouldBeGreaterThanMax()"
+      );
+    });
 
-  it("getContractState(): Should be initialized with state: INITIALIZED", async () => {
-    const state = await plrStaking.getContractState();
-    expect(state).to.equal(0);
-  });
+    it("stake(): Error checks - should trigger maximum total stake reached amount check", async () => {
+      const newMaxStake = "7199999000000000000000000"; // 7,199,999 PLR
+      const invalidStake = "10000000000000000000000"; // 10,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(owner).updateMaxStakeLimit(newMaxStake);
+      await plrStaking.connect(owner).stake(newMaxStake);
+      await expectRevert(
+        plrStaking.connect(addr1).stake(invalidStake),
+        "MaximumTotalStakeReached(7200000000000000000000000, 7199999000000000000000000, 1000000000000000000, 10000000000000000000000)"
+      );
+    });
 
-  it("getContractState(): Should return current contract state: STAKED", async () => {
-    await plrStaking.connect(owner).setStateStaked();
-    const state = await plrStaking.getContractState();
-    expect(state).to.equal(2);
+    it("unstake(): Error checks - should trigger if reward token allocation has not been performed", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await wethToken
+        .connect(owner)
+        .transfer(plrStaking.address, ethers.utils.parseEther("71"));
+      await expectRevert(
+        plrStaking.connect(addr1).unstake(),
+        "RewardsNotAllocated()"
+      );
+    });
+
+    it("calculateRewardAllocation(): Error checks - should trigger if reward tokens have not been transferred to contract check", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await expectRevert(
+        plrStaking.calculateRewardAllocation(),
+        "RewardsNotTransferred()"
+      );
+    });
+
+    it("setStateReadyForUnstake(): Error checks - should trigger if staked period < 12 months", async () => {
+      await plrStaking.connect(owner).setStateStaked();
+      await expectRevert(
+        plrStaking.setStateReadyForUnstake(),
+        "StakedDurationTooShort()"
+      );
+    });
   });
 });

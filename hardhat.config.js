@@ -1,6 +1,8 @@
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-gas-reporter");
+require("hardhat-tracer");
+require("solidity-coverage");
 
 const { resolve } = require("path");
 const { config: dotenvConfig } = require("dotenv");
