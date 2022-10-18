@@ -13,18 +13,18 @@ module.exports = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
-    // rinkeby: {
-    //   url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   accounts: [process.env.DEPLOYER_PRIVATE_KEY]
-    // },
-    // mumbai: {
-    //     url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //     accounts: [process.env.DEPLOYER_PRIVATE_KEY],
-    // },
-    // polygon: {
-    //   url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   accounts: [process.env.DEPLOYER_PRIVATE_KEY],
-    // },
+    rinkeby: {
+      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+    },
+    mumbai: {
+      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+    },
+    polygon: {
+      url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+    },
   },
   gasReporter: {
     currency: "USD",

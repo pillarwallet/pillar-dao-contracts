@@ -1,14 +1,26 @@
-const { ethers, run } = require("hardhat");
+const { ethers, hre, run } = require("hardhat");
 
 const main = async () => {
   await run("compile");
 
-  const stakingToken = "0xe3818504c1B32bF1557b16C238B2E01Fd3149C17"; // add staking token address here (PLR)
-  const rewardToken = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // add reward token address here (Wrapped ETH)
-  const maxTotalStake = 0; // will default to 7.2m PLR
+  const chainId = hre.network.config.chainId;
+
+  if (chainId == 1) {
+    // Constructor parameters
+    const stakingToken = "0xe3818504c1B32bF1557b16C238B2E01Fd3149C17"; // (PLR - ethereum mainnet)
+    const rewardToken = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // (Wrapped ETH - ethereum mainnet)
+    const maxTotalStake = 0; // will default to 7.2m PLR
+    const values = [stakingToken, rewardToken, maxTotalStake];
+  } else {
+    const stakingToken = ""; // add staking token address here
+    const rewardToken = ""; // add reward token address here
+    const maxTotalStake = 0; // will default to 7.2m PLR
+    const values = [stakingToken, rewardToken, maxTotalStake];
+  }
 
   const values = [stakingToken, rewardToken, maxTotalStake];
 
+  // Deploy Pillar Staking contract
   const PillarStaking = await ethers.getContractFactory("PillarStaking");
   const pillarStaking = await PillarStaking.deploy(...values);
   await pillarStaking.deployed();

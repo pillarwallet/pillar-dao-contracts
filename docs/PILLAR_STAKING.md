@@ -48,6 +48,7 @@ Max contract stake limits are defaulted to 7.2m PLR (17e18) if 0 passed in as ar
 
 &nbsp;  
 
+* `depositRewards` - Called by contract owner to deposit reward tokens for allocation.
 * `calculateRewardAllocation` - Called by the contract owner (once reward tokens have been deposited). The assigns a reward to each staker based upon their stake token weighting. This can only be performed when reward tokens have been transferred to the contract. Reward amount stored in wei to account for decimalization of stake percentage.
 * `updateMinStakeLimit` - Called by contract owner to update the current minimum stake amount for users (initially 10,000 PLR). This can only be done when the contract is STAKEABLE. Should be given in wei.
 * `updateMaxStakeLimit` - Called by contract owner to update the current maximum stake amount for users (initially 250,000 PLR). This can only be done when the contract is STAKEABLE. Should be given in wei.
@@ -157,7 +158,11 @@ Max contract stake limits are defaulted to 7.2m PLR (17e18) if 0 passed in as ar
 ### StakedDurationTooShort
 * Fires if: The stake period is less than 12 months.
 * Representation `StakedDurationTooShort()`
-  
+### RewardsCannotBeZero
+  * Fires if: Trying to deposit reward amount of 0.
+  * Representation `RewardsCannotBeZero()`
+
+
 &nbsp;  
 
 ---
@@ -193,6 +198,7 @@ In a separate terminal window:
       <span style="color: green;">✔</span> Deploys Pillar Staking contract without errors  
     **Staking PLR**  
       <span style="color: green;">✔</span> stake(): Should allow users to stake within specified limits  
+      <span style="color: green;">✔</span> stake(): Should allow a single user to stake multiple times within specified limits  
     **Unstaking PLR and earning rewards**  
       <span style="color: green;">✔</span> unstake(): Should allow a user to unstake their total staked balance and earned rewards (67ms)  
       <span style="color: green;">✔</span> unstake(): Should allow multiple users to unstake their total staked balance and earned rewards (84ms)  
@@ -215,6 +221,8 @@ In a separate terminal window:
       <span style="color: green;">✔</span> setStateInitialized(): Should set staking state to INITIALIZED  
       <span style="color: green;">✔</span> getContractState(): Should be initialized with state: INITIALIZED  
       <span style="color: green;">✔</span> getContractState(): Should return current contract state: STAKED  
+    **Depositing rewards**
+      <span style="color: green;">✔</span> depositRewards(): Should allow the contract owner to deposit reward tokens  
     **Allocation of rewards**  
       <span style="color: green;">✔</span> calculateRewardAllocation(): Should calculate the correct amount of rewards for stakers (48ms)  
     **Function permissions**  
@@ -234,6 +242,7 @@ In a separate terminal window:
       <span style="color: green;">✔</span> stake(): Should emit an event on successful staking  
       <span style="color: green;">✔</span> unstake(): Should emit an Unstaked event on unstaking  
       <span style="color: green;">✔</span> unstake(): Should emit an RewardPaid event on unstaking (47ms)  
+      <span style="color: green;">✔</span> depositRewards(): Should emit an RewardsDeposited event on depositing rewards  
       <span style="color: green;">✔</span> updateMinStakeLimit(): Should emit an MinStakeAmountUpdated event  
       <span style="color: green;">✔</span> updateMaxStakeLimit(): Should emit an MaxStakeAmountUpdated event  
       <span style="color: green;">✔</span> setState<contract-state>(): Should emit ContractStateUpdated event  
@@ -247,6 +256,7 @@ In a separate terminal window:
       <span style="color: green;">✔</span> stake(): Error checks - should trigger maximum personal stake amount check  
       <span style="color: green;">✔</span> stake(): Error checks - should trigger maximum total stake reached amount check  
       <span style="color: green;">✔</span> unstake(): Error checks - should trigger if reward token allocation has not been performed  
+      <span style="color: green;">✔</span> depositRewards(): Error checks - should trigger if attempted to deposit zero reward tokens  
       <span style="color: green;">✔</span> calculateRewardAllocation(): Error checks - should trigger if reward tokens have not been transferred to contract check  
       <span style="color: green;">✔</span> setStateReadyForUnstake(): Error checks - should trigger if staked period < 12 months  
 
@@ -261,7 +271,7 @@ In a separate terminal window:
 File                      |  % Stmts | % Branch |  % Funcs |  % Lines |
 --------------------------|----------|----------|----------|----------|
  contracts/               |          |          |          |          |
-  PillarStaking.sol       |    93.88 |    79.41 |    88.89 |    91.14 |
+  PillarStaking.sol       |    94.23 |    80.56 |    89.47 |    91.57 |
 
 &nbsp;  
 
@@ -274,17 +284,18 @@ File                      |  % Stmts | % Branch |  % Funcs |  % Lines |
 |--------------------------------------------------|---------------------------|---------------|-----------------------------|
 |  **Methods**                                                                                                                   
 |  **Contract**      |  **Method**                 |  **Min**    |  **Max**    |  **Avg**      | **# calls**   |
-|  PillarStaking     |  calculateRewardAllocation  |      68335  |      95677  |        77449  |            6  |
-|  PillarStaking     |  setStateInitialized        |          -  |          -  |        26925  |            3  |
+|  PillarStaking     |  calculateRewardAllocation  |      68419  |      95761  |        77533  |            6  |
+|  PillarStaking     |  depositRewards             |      68122  |      90010  |        77561  |           10  |
+|  PillarStaking     |  setStateInitialized        |          -  |          -  |        26970  |            3  |
 |  PillarStaking     |  setStateReadyForUnstake    |      31955  |      49055  |        33510  |           11  |
-|  PillarStaking     |  setStateStakeable          |          -  |          -  |        68771  |           32  |
+|  PillarStaking     |  setStateStakeable          |          -  |          -  |        68771  |           33  |
 |  PillarStaking     |  setStateStaked             |      53847  |      70947  |        61176  |            7  |
-|  PillarStaking     |  stake                      |     103695  |     172107  |       163952  |           21  |
-|  PillarStaking     |  unstake                    |      81331  |      89263  |        82464  |            7  |
-|  PillarStaking     |  updateMaxStakeLimit        |      34020  |      34056  |        34042  |            6  |
-|  PillarStaking     |  updateMinStakeLimit        |      29203  |      34099  |        33115  |            5  |
+|  PillarStaking     |  stake                      |     103695  |     172107  |       151330  |           28  |
+|  PillarStaking     |  unstake                    |      81340  |      89274  |        82473  |            7  |
+|  PillarStaking     |  updateMaxStakeLimit        |      34064  |      34100  |        34084  |            6  |
+|  PillarStaking     |  updateMinStakeLimit        |      29181  |      34077  |        33093  |            5  |
 |  **Deployments**                                 |                                           |**% of limit** |             
-|  PillarStaking                                   |    1836391  |    1836403  |      1836401  |        6.1 %  |
+|  PillarStaking                                   |    1910700  |    1910724  |      1910723  |        6.4 %  |
 
 &nbsp;  
 

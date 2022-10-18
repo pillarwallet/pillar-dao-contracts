@@ -29,6 +29,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     uint256 public totalStaked;
     uint256 stakingPeriod;
     uint256 stakedPeriod;
+    bool rewardsDeposited = false;
     bool rewardsAllocated = false;
 
     struct Stakeholder {
@@ -49,6 +50,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
+    event RewardsDeposited();
     event RewardsAllocated();
     event RewardPaid(address indexed user, uint256 reward);
     event ContractStateUpdated(StakingState newState);
@@ -170,9 +172,16 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
+    function depositRewards(uint256 _amount) external onlyOwner {
+        if (_amount == 0) revert RewardsCannotBeZero();
+        rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
+        rewardsDeposited = true;
+        emit RewardsDeposited();
+    }
+
     function calculateRewardAllocation() external onlyOwner {
+        if (!rewardsDeposited) revert RewardsNotTransferred();
         uint256 totalRewards = rewardToken.balanceOf(address(this));
-        if (totalRewards == 0) revert RewardsNotTransferred();
         for (uint256 i; i < stakeholderList.length; ++i) {
             address stakerAddress = stakeholderList[i];
             uint256 stakeAmount = getStakedAmountForAccount(stakerAddress);
@@ -268,4 +277,5 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     error StakingPeriodPassed();
     error StakingDurationTooShort();
     error StakedDurationTooShort();
+    error RewardsCannotBeZero();
 }
