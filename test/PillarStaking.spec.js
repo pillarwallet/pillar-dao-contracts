@@ -500,9 +500,9 @@ describe("PillarStakingContract", () => {
 
     it("depositRewards(): Should emit an RewardsDeposited event on depositing rewards", async () => {
       const rewards = "100000000000000000000"; // 100 ETH
-      await expect(
-        await plrStaking.connect(owner).depositRewards(rewards)
-      ).to.emit(plrStaking, "RewardsDeposited");
+      await expect(await plrStaking.connect(owner).depositRewards(rewards))
+        .to.emit(plrStaking, "RewardsDeposited")
+        .withArgs(rewards);
     });
 
     it("updateMinStakeLimit(): Should emit an MinStakeAmountUpdated event", async () => {
