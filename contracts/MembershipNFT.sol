@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
@@ -9,30 +10,22 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-
     string public baseURI;
 
     address private vaultAddress = address(0);
+
+    uint256 private _tokenIds = 1;
 
     modifier onlyVault() {
         require(msg.sender == vaultAddress, "Not the vault");
         _;
     }
 
-    event Minted (
-        address indexed owner,
-        uint indexed tokenId
-    );
+    event Minted(address indexed owner, uint256 indexed tokenId);
 
-    event Burned (
-        address indexed owner,
-        uint indexed tokenId
-    );
+    event Burned(address indexed owner, uint256 indexed tokenId);
 
-    constructor(
-        string memory name,
-        string memory symbol
-    ) ERC721(name, symbol) {
+    constructor(string memory name, string memory symbol) ERC721(name, symbol) {
         vaultAddress = msg.sender;
     }
 
@@ -40,22 +33,28 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         address from,
         address to,
         uint256 tokenId
-    ) internal onlyVault virtual override {
+    ) internal virtual override onlyVault {
         //disable transfers
-        super._beforeTokenTransfer(from,to,tokenId);
+        super._beforeTokenTransfer(from, to, tokenId);
     }
 
-    function mint(address _to) external onlyVault nonReentrant returns (uint256) {
-        uint256 mintIndex = totalSupply().add(1);
+    function mint(address _to)
+        external
+        onlyVault
+        nonReentrant
+        returns (uint256)
+    {
+        uint256 mintIndex = _tokenIds;
         _safeMint(_to, mintIndex);
+        ++_tokenIds;
         emit Minted(_to, mintIndex);
         return mintIndex;
     }
 
-    function burn(uint256 _tokenId) onlyVault external {
+    function burn(uint256 _tokenId) external onlyVault {
         address owner = ownerOf(_tokenId);
         _burn(_tokenId);
-        emit Burned(owner,_tokenId);
+        emit Burned(owner, _tokenId);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
@@ -79,8 +78,8 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         IERC20 token = IERC20(_token);
         uint256 balance = token.balanceOf(address(this));
 
-        if(balance > 0) {
-            token.safeTransfer(vaultAddress,balance);
+        if (balance > 0) {
+            token.safeTransfer(vaultAddress, balance);
         }
     }
 
