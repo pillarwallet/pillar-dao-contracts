@@ -33,14 +33,14 @@ Max contract stake limits are defaulted to 7.2m PLR (17e18) if 0 passed in as ar
 &nbsp;  
 
 * `stake` - Allows users to stake their PLR tokens into the contract. This can only be done when the contract state is STAKEABLE. The amount staked has to be >= the minimum stake limit, <= the maximum stake limit and <= the maximum allowed staking amount of the contract. Stake amount should be given in wei. After the staking period has passed, no more staking will be allowed.
-* `unstake` - Allows users to withdraw their tokens from the contract and claim the rewards they have earned. This can only be done when the contract state is READY_FOR_UNSTAKE and when staking rewards have been allocated.
+* `unstake` - Allows users to withdraw their tokens from the contract and claim the rewards they have earned. This can only be done when the contract state is READY_FOR_UNSTAKE.
 * `getContractState` - Allows users to see the current state of the contract. The four states are:
   * `INITIALIZED` - The contract has been initialized, however staking cannot yet be performed.
   * `STAKEABLE` - The contract has been opened for staking. Users can now stake tokens in the contract (which will be open for a specific time window).
   * `STAKED` - The contract is no longer accepting user's tokens for staking. This denotes the period where tokens are locked for staking (for a specified time window - >= 12 months from time of staking locked).
   * `READY_FOR_UNSTAKE` - The contract is open for unstaking. Staked tokens are no longer locked and rewards have been calculated.
 * `getStakedAmountForAccount` - Allows users to check how many tokens are staked for an address.
-* `getRewardAmountForAccount` - Allows users to check how many reward tokens have been allocated based upon thier staked tokens.
+* `getStakedAccounts` - Returns a list of all stakeholder addresses.
 
 &nbsp;  
 
@@ -49,7 +49,6 @@ Max contract stake limits are defaulted to 7.2m PLR (17e18) if 0 passed in as ar
 &nbsp;  
 
 * `depositRewards` - Called by contract owner to deposit reward tokens for allocation.
-* `calculateRewardAllocation` - Called by the contract owner (once reward tokens have been deposited). The assigns a reward to each staker based upon their stake token weighting. This can only be performed when reward tokens have been transferred to the contract. Reward amount stored in wei to account for decimalization of stake percentage.
 * `updateMinStakeLimit` - Called by contract owner to update the current minimum stake amount for users (initially 10,000 PLR). This can only be done when the contract is STAKEABLE. Should be given in wei.
 * `updateMaxStakeLimit` - Called by contract owner to update the current maximum stake amount for users (initially 250,000 PLR). This can only be done when the contract is STAKEABLE. Should be given in wei.
 * `setStateInitialized` - Called by the contract owner to change the contract state to INITIALIZED.
@@ -146,9 +145,6 @@ Max contract stake limits are defaulted to 7.2m PLR (17e18) if 0 passed in as ar
 ### RewardsNotTransferred
 * Fires if: Token rewards allocation is attempted when no reward tokens exist on contract.
 * Representation `RewardsNotTransferred()`
-### RewardsNotAllocated
-* Fires if: Unstake is attempted when rewards have not been allocated.
-* Representation `RewardsNotAllocated()`
 ### StakingPeriodPassed
 * Fires if: The alloted staking period has passed.
 * Representation `StakingPeriodPassed()`
@@ -159,8 +155,12 @@ Max contract stake limits are defaulted to 7.2m PLR (17e18) if 0 passed in as ar
 * Fires if: The stake period is less than 12 months.
 * Representation `StakedDurationTooShort()`
 ### RewardsCannotBeZero
-  * Fires if: Trying to deposit reward amount of 0.
-  * Representation `RewardsCannotBeZero()`
+* Fires if: Trying to deposit reward amount of 0.
+* Representation `RewardsCannotBeZero()`
+### UserAlreadyClaimedRewards
+* Fires if: Trying to claim rewards/unstake more than once.
+* Representation `UserAlreadyClaimedRewards`
+  * * Provided error arguments will be of type `Address` and will be the address of the user that is trying to unstake/claim multiple times.
 
 
 &nbsp;  
@@ -208,12 +208,11 @@ In a separate terminal window:
     **Updating min stake limit**  
       <span style="color: green;">✔</span> updateMinStakeLimit(): Should allow decreasing of minimum stake  
       <span style="color: green;">✔</span> updateMinStakeLimit(): Should allow increasing of minimum stake  
+    **Viewing stakeholders**  
+      <span style="color: green;">✔</span> getStakedAccounts: Should return list of stakeholders   
     **Viewing staked amount**  
       <span style="color: green;">✔</span> getStakedAmountForAccount(): Should return zero for a user that has not staked  
       <span style="color: green;">✔</span> getStakedAmountForAccount(): Should return staked amount for a user that has staked  
-    **Viewing reward amount**  
-      <span style="color: green;">✔</span> getRewardAmountForAccount(): Should return zero if rewards have not been calculated  
-      <span style="color: green;">✔</span> getRewardAmountForAccount(): Should return reward amount for a user that has staked  
     **Updating/viewing contract state**  
       <span style="color: green;">✔</span> setStateStakeable(): Should update staking state from INITIALIZED to STAKEABLE  
       <span style="color: green;">✔</span> setStateStaked(): Should update staking state from INITIALIZED to STAKED  
@@ -223,8 +222,6 @@ In a separate terminal window:
       <span style="color: green;">✔</span> getContractState(): Should return current contract state: STAKED  
     **Depositing rewards**
       <span style="color: green;">✔</span> depositRewards(): Should allow the contract owner to deposit reward tokens  
-    **Allocation of rewards**  
-      <span style="color: green;">✔</span> calculateRewardAllocation(): Should calculate the correct amount of rewards for stakers (48ms)  
     **Function permissions**  
       <span style="color: green;">✔</span> calculateRewardAllocation(): Error checks - should only allow owner to call  
       <span style="color: green;">✔</span> setStateInitialized(): Error checks - should only allow owner to call  
@@ -255,9 +252,8 @@ In a separate terminal window:
       <span style="color: green;">✔</span> stake(): Error checks - should trigger insufficient balance check  
       <span style="color: green;">✔</span> stake(): Error checks - should trigger maximum personal stake amount check  
       <span style="color: green;">✔</span> stake(): Error checks - should trigger maximum total stake reached amount check  
-      <span style="color: green;">✔</span> unstake(): Error checks - should trigger if reward token allocation has not been performed  
+      <span style="color: green;">✔</span> unstake(): Error checks - should trigger error is user tries to unstake and claim rewards twice  
       <span style="color: green;">✔</span> depositRewards(): Error checks - should trigger if attempted to deposit zero reward tokens  
-      <span style="color: green;">✔</span> calculateRewardAllocation(): Error checks - should trigger if reward tokens have not been transferred to contract check  
       <span style="color: green;">✔</span> setStateReadyForUnstake(): Error checks - should trigger if staked period < 12 months  
 
 
@@ -284,18 +280,17 @@ File                      |  % Stmts | % Branch |  % Funcs |  % Lines |
 |--------------------------------------------------|---------------------------|---------------|-----------------------------|
 |  **Methods**                                                                                                                   
 |  **Contract**      |  **Method**                 |  **Min**    |  **Max**    |  **Avg**      | **# calls**   |
-|  PillarStaking     |  calculateRewardAllocation  |      68419  |      95761  |        77533  |            6  |
-|  PillarStaking     |  depositRewards             |      68122  |      90010  |        77561  |           10  |
-|  PillarStaking     |  setStateInitialized        |          -  |          -  |        26970  |            3  |
-|  PillarStaking     |  setStateReadyForUnstake    |      31955  |      49055  |        33510  |           11  |
-|  PillarStaking     |  setStateStakeable          |          -  |          -  |        68771  |           33  |
+|  PillarStaking     |  depositRewards             |             |             |        90250  |            8  |
+|  PillarStaking     |  setStateInitialized        |          -  |          -  |        26947  |            3  |
+|  PillarStaking     |  setStateReadyForUnstake    |      31955  |      49055  |        34093  |            8  |
+|  PillarStaking     |  setStateStakeable          |          -  |          -  |        68771  |           30  |
 |  PillarStaking     |  setStateStaked             |      53847  |      70947  |        61176  |            7  |
-|  PillarStaking     |  stake                      |     103695  |     172107  |       151330  |           28  |
-|  PillarStaking     |  unstake                    |      81340  |      89274  |        82473  |            7  |
-|  PillarStaking     |  updateMaxStakeLimit        |      34064  |      34100  |        34084  |            6  |
-|  PillarStaking     |  updateMinStakeLimit        |      29181  |      34077  |        33093  |            5  |
+|  PillarStaking     |  stake                      |      76838  |     192306  |       155290  |           26  |
+|  PillarStaking     |  unstake                    |     103381  |     112981  |       106048  |            9  |
+|  PillarStaking     |  updateMaxStakeLimit        |      34020  |      34056  |        34042  |            5  |
+|  PillarStaking     |  updateMinStakeLimit        |      29203  |      34099  |        33115  |            5  |
 |  **Deployments**                                 |                                           |**% of limit** |             
-|  PillarStaking                                   |    1910700  |    1910724  |      1910723  |        6.4 %  |
+|  PillarStaking                                   |    1820466  |    1820490  |      1820488  |        6.1 %  |
 
 &nbsp;  
 

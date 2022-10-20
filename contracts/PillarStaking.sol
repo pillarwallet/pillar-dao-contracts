@@ -6,8 +6,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import "hardhat/console.sol";
-
 /// @title PillarStaking
 /// @author Luke Wickens <luke@pillarproject.io>
 /// @notice staking contract for PLR tokens
@@ -29,13 +27,12 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     uint256 public totalStaked;
     uint256 stakingPeriod;
     uint256 stakedPeriod;
-    bool rewardsDeposited = false;
-    bool rewardsAllocated = false;
+    uint256 rewards;
 
     struct Stakeholder {
         bool staked;
         uint256 stakedAmount;
-        uint256 rewardAmount;
+        bool claimed;
     }
 
     enum StakingState {
@@ -77,11 +74,6 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     modifier whenReadyForUnstake() {
         if (state != StakingState.READY_FOR_UNSTAKE)
             revert OnlyWhenReadyForUnstake();
-        _;
-    }
-
-    modifier whenRewardsAllocated() {
-        if (!rewardsAllocated) revert RewardsNotAllocated();
         _;
     }
 
@@ -127,22 +119,19 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         if (!stakeholderData[msg.sender].staked) {
             stakeholderList.push(msg.sender);
         }
+        stakeholderData[msg.sender].staked = true;
         stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
         emit Staked(msg.sender, _amount);
     }
 
-    function unstake()
-        external
-        nonReentrant
-        whenReadyForUnstake
-        whenRewardsAllocated
-    {
+    function unstake() external nonReentrant whenReadyForUnstake {
+        if (stakeholderData[msg.sender].claimed)
+            revert UserAlreadyClaimedRewards(msg.sender);
+        uint256 rewardAmount = calculateRewardAllocation(msg.sender);
         uint256 stakedBalance = stakeholderData[msg.sender].stakedAmount;
-        totalStaked = totalStaked - stakedBalance;
-        stakeholderData[msg.sender].stakedAmount = 0;
+        stakeholderData[msg.sender].staked = false;
         stakingToken.safeTransfer(msg.sender, stakedBalance);
-        uint256 rewardAmount = stakeholderData[msg.sender].rewardAmount;
-        stakeholderData[msg.sender].rewardAmount = 0;
+        stakeholderData[msg.sender].claimed = true;
         rewardToken.safeTransfer(msg.sender, rewardAmount);
         emit Unstaked(msg.sender, stakedBalance);
         emit RewardPaid(msg.sender, rewardAmount);
@@ -154,6 +143,10 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         return state;
     }
 
+    function getStakedAccounts() public view returns (address[] memory) {
+        return stakeholderList;
+    }
+
     function getStakedAmountForAccount(address account)
         public
         view
@@ -162,35 +155,24 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         return stakeholderData[account].stakedAmount;
     }
 
-    function getRewardAmountForAccount(address account)
-        external
-        view
-        returns (uint256 amount)
-    {
-        return stakeholderData[account].rewardAmount;
-    }
-
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function depositRewards(uint256 _amount) external onlyOwner {
         if (_amount == 0) revert RewardsCannotBeZero();
         rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
-        rewardsDeposited = true;
+        rewards = _amount;
         emit RewardsDeposited(_amount);
     }
 
-    function calculateRewardAllocation() external onlyOwner {
-        if (!rewardsDeposited) revert RewardsNotTransferred();
-        uint256 totalRewards = rewardToken.balanceOf(address(this));
-        for (uint256 i; i < stakeholderList.length; ++i) {
-            address stakerAddress = stakeholderList[i];
-            uint256 stakeAmount = getStakedAmountForAccount(stakerAddress);
-            uint256 stakedPercentage = ((stakeAmount * BPS) / totalStaked);
-            uint256 reward = ((stakedPercentage * totalRewards) / BPS);
-            stakeholderData[stakerAddress].rewardAmount = reward;
-        }
-        rewardsAllocated = true;
-        emit RewardsAllocated();
+    function calculateRewardAllocation(address _staker)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 stakeAmount = getStakedAmountForAccount(_staker);
+        uint256 stakedPercentage = ((stakeAmount * BPS) / totalStaked);
+        uint256 reward = ((stakedPercentage * rewards) / BPS);
+        return reward;
     }
 
     function updateMinStakeLimit(uint256 _amount)
@@ -273,9 +255,9 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     error OnlyWhenStaked();
     error OnlyWhenReadyForUnstake();
     error RewardsNotTransferred();
-    error RewardsNotAllocated();
     error StakingPeriodPassed();
     error StakingDurationTooShort();
     error StakedDurationTooShort();
     error RewardsCannotBeZero();
+    error UserAlreadyClaimedRewards(address _address);
 }

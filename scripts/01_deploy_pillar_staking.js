@@ -1,22 +1,11 @@
-const { ethers, hre, run } = require("hardhat");
+const { ethers, run } = require("hardhat");
 
 const main = async () => {
   await run("compile");
 
-  const chainId = hre.network.config.chainId;
-
-  if (chainId == 1) {
-    // Constructor parameters
-    const stakingToken = "0xe3818504c1B32bF1557b16C238B2E01Fd3149C17"; // (PLR - ethereum mainnet)
-    const rewardToken = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // (Wrapped ETH - ethereum mainnet)
-    const maxTotalStake = 0; // will default to 7.2m PLR
-    const values = [stakingToken, rewardToken, maxTotalStake];
-  } else {
-    const stakingToken = ""; // add staking token address here
-    const rewardToken = ""; // add reward token address here
-    const maxTotalStake = 0; // will default to 7.2m PLR
-    const values = [stakingToken, rewardToken, maxTotalStake];
-  }
+  const stakingToken = "0x267c85113BAfbBe829918fB4c23135af72c9C472"; // add staking token address here (PLR - Goerli)
+  const rewardToken = "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"; // add reward token address here (WETH - Goerli)
+  const maxTotalStake = 0; // will default to 7.2m PLR
 
   const values = [stakingToken, rewardToken, maxTotalStake];
 
