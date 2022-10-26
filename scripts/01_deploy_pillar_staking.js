@@ -5,9 +5,10 @@ const main = async () => {
 
   const stakingToken = "0x267c85113BAfbBe829918fB4c23135af72c9C472"; // add staking token address here (PLR - Goerli)
   const rewardToken = "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"; // add reward token address here (WETH - Goerli)
+  const stakeToken = ""; // add stkPLR token address here
   const maxTotalStake = 0; // will default to 7.2m PLR
 
-  const values = [stakingToken, rewardToken, maxTotalStake];
+  const values = [stakingToken, rewardToken, stakeToken, maxTotalStake];
 
   // Deploy Pillar Staking contract
   const PillarStaking = await ethers.getContractFactory("PillarStaking");

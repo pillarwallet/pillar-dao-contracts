@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IPillarStakingToken} from "./IPillarStakingToken.sol";
 
 /// @title PillarStaking
 /// @author Luke Wickens <luke@pillarproject.io>
@@ -15,6 +16,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     IERC20 public stakingToken;
     IERC20 public rewardToken;
+    IPillarStakingToken public stakedToken;
     address[] public stakeholderList;
     mapping(address => Stakeholder) public stakeholderData;
 
@@ -32,6 +34,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     struct Stakeholder {
         bool staked;
         uint256 stakedAmount;
+        uint256 rewardAmount;
         bool claimed;
     }
 
@@ -47,8 +50,8 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
-    event RewardsDeposited(uint256 rewards);
-    event RewardsAllocated();
+    event RewardsSet(uint256 rewards);
+    event RewardAllocated(address user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
     event ContractStateUpdated(StakingState newState);
     event MinStakeAmountUpdated(uint256 newMinStake);
@@ -82,13 +85,16 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     constructor(
         address _stakingToken,
         address _rewardToken,
+        address _stakedToken,
         uint256 _maxTotalStake
     ) {
         if (_stakingToken == address(0)) revert InvalidStakingToken();
-        if (_rewardToken == address(0)) revert InvalidRewardsToken();
+        if (_rewardToken == address(0)) revert InvalidRewardToken();
+        if (_stakedToken == address(0)) revert InvalidStakedToken();
         if (_maxTotalStake > 0) maxTotalStake = _maxTotalStake;
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
+        stakedToken = IPillarStakingToken(_stakedToken);
         setStateInitialized();
     }
 
@@ -121,20 +127,41 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         }
         stakeholderData[msg.sender].staked = true;
         stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        stakedToken.mint(msg.sender, _amount);
         emit Staked(msg.sender, _amount);
     }
 
     function unstake() external nonReentrant whenReadyForUnstake {
+        uint256 rewardAmount;
         if (stakeholderData[msg.sender].claimed)
             revert UserAlreadyClaimedRewards(msg.sender);
-        uint256 rewardAmount = calculateRewardAllocation(msg.sender);
+        if (stakeholderData[msg.sender].rewardAmount == 0) {
+            calculateRewardAllocation(msg.sender);
+            rewardAmount = getRewardAmountForAccount(msg.sender);
+        } else {
+            rewardAmount = stakeholderData[msg.sender].rewardAmount;
+        }
         uint256 stakedBalance = stakeholderData[msg.sender].stakedAmount;
         stakeholderData[msg.sender].staked = false;
+        stakedToken.burnFrom(msg.sender, stakedBalance);
         stakingToken.safeTransfer(msg.sender, stakedBalance);
         stakeholderData[msg.sender].claimed = true;
         rewardToken.safeTransfer(msg.sender, rewardAmount);
         emit Unstaked(msg.sender, stakedBalance);
         emit RewardPaid(msg.sender, rewardAmount);
+    }
+
+    function calculateRewardAllocation(address _staker)
+        public
+        whenReadyForUnstake
+    {
+        if (stakeholderData[msg.sender].rewardAmount != 0)
+            revert RewardsAlreadyCalculated();
+        uint256 stakeAmount = getStakedAmountForAccount(_staker);
+        uint256 stakedPercentage = ((stakeAmount * BPS) / totalStaked);
+        uint256 reward = ((stakedPercentage * rewards) / BPS);
+        stakeholderData[msg.sender].rewardAmount = reward;
+        emit RewardAllocated(_staker, reward);
     }
 
     /* ========== VIEWS ========== */
@@ -155,24 +182,21 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         return stakeholderData[account].stakedAmount;
     }
 
-    /* ========== RESTRICTED FUNCTIONS ========== */
-
-    function depositRewards(uint256 _amount) external onlyOwner {
-        if (_amount == 0) revert RewardsCannotBeZero();
-        rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
-        rewards = _amount;
-        emit RewardsDeposited(_amount);
+    function getRewardAmountForAccount(address account)
+        public
+        view
+        returns (uint256 amount)
+    {
+        return stakeholderData[account].rewardAmount;
     }
 
-    function calculateRewardAllocation(address _staker)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 stakeAmount = getStakedAmountForAccount(_staker);
-        uint256 stakedPercentage = ((stakeAmount * BPS) / totalStaked);
-        uint256 reward = ((stakedPercentage * rewards) / BPS);
-        return reward;
+    /* ========== RESTRICTED FUNCTIONS ========== */
+
+    function setRewards(uint256 _amount) external onlyOwner {
+        if (_amount == 0) revert RewardsCannotBeZero();
+        rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
+        rewards += _amount;
+        emit RewardsSet(_amount);
     }
 
     function updateMinStakeLimit(uint256 _amount)
@@ -236,8 +260,9 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     /* ========== ERRORS ========== */
 
-    error InvalidRewardsToken();
+    error InvalidRewardToken();
     error InvalidStakingToken();
+    error InvalidStakedToken();
     error InvalidMinimumStake(uint256 minimumStakeAmount);
     error InvalidMaximumStake(uint256 maximumStakeAmount);
     error InsufficientBalance();
@@ -259,5 +284,6 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     error StakingDurationTooShort();
     error StakedDurationTooShort();
     error RewardsCannotBeZero();
+    error RewardsAlreadyCalculated();
     error UserAlreadyClaimedRewards(address _address);
 }

@@ -7,7 +7,14 @@ const elevenDays = 11 * 24 * 60 * 60;
 const oneYearOneWeek = 53 * 7 * 24 * 60 * 60;
 
 describe("PillarStakingContract", () => {
-  let plrToken, plrStaking, owner, addr1, addr2, addr3;
+  let wethToken,
+    plrToken,
+    plrStakedToken,
+    plrStaking,
+    owner,
+    addr1,
+    addr2,
+    addr3;
 
   before(async () => {
     [owner, addr1, addr2, addr3] = await ethers.getSigners();
@@ -22,15 +29,20 @@ describe("PillarStakingContract", () => {
     const PillarToken = await ethers.getContractFactory("DummyPillarToken");
     plrToken = await PillarToken.deploy();
 
+    // deploy PillarStakingToken contract
+    const PillarStakedToken = await ethers.getContractFactory("StakedPillar");
+    plrStakedToken = await PillarStakedToken.deploy();
+
     // deploy PillarStaking contract
     const PillarStaking = await ethers.getContractFactory("PillarStaking");
     plrStaking = await PillarStaking.deploy(
       plrToken.address,
       wethToken.address,
+      plrStakedToken.address,
       0
     );
 
-    //transfer dPLR & dWETH tokens to accounts
+    // transfer dPLR & dWETH tokens to accounts
     await plrToken
       .connect(owner)
       .transfer(addr1.address, ethers.utils.parseEther("1000000"));
@@ -49,6 +61,12 @@ describe("PillarStakingContract", () => {
     await wethToken
       .connect(owner)
       .approve(plrStaking.address, ethers.utils.parseEther("10000"));
+
+    // set staking contract as MINTER_ROLE in stkPLR
+    const MINTER_ROLE = await plrStakedToken.MINTER_ROLE();
+    await plrStakedToken
+      .connect(owner)
+      .grantRole(MINTER_ROLE, plrStaking.address);
   });
 
   // DEPLOYMENT //
@@ -69,6 +87,18 @@ describe("PillarStakingContract", () => {
       expect(wethName).to.equal("DummyWETHToken");
       expect(wethSymbol).to.equal("dWETH");
       expect(wethTotalSupply).to.equal(ethers.utils.parseEther("1000000000"));
+    });
+
+    it("Deploys Pillar Staked Token without errors", async () => {
+      const pStkName = await plrToken.name();
+      const pStkSymbol = await plrToken.symbol();
+      const role = ethers.utils.keccak256(
+        ethers.utils.toUtf8Bytes("MINTER_ROLE")
+      );
+      const isMinter = await plrStakedToken.hasRole(role, plrStaking.address);
+      expect(pStkName).to.equal("DummyPillarToken");
+      expect(pStkSymbol).to.equal("dPLR");
+      expect(isMinter).to.equal(true);
     });
 
     it("Deploys Pillar Staking contract without errors", async () => {
@@ -93,8 +123,8 @@ describe("PillarStakingContract", () => {
     it("stake(): Should allow users to stake within specified limits", async () => {
       await plrStaking.connect(owner).setStateStakeable();
       const stakeAmount = "13131000000000000000000"; // 13,131 PLR
-      const addr1Balance = await plrToken.balanceOf(addr1.address);
-      await plrStaking.connect(addr1).stake(stakeAmount);
+      const tx = await plrStaking.connect(addr1).stake(stakeAmount);
+      const addr1StakedBalance = await plrStakedToken.balanceOf(addr1.address);
       expect(await plrStaking.totalStaked()).to.equal(stakeAmount);
       expect(await plrToken.balanceOf(plrStaking.address)).to.equal(
         stakeAmount
@@ -102,6 +132,7 @@ describe("PillarStakingContract", () => {
       expect(
         await plrStaking.getStakedAmountForAccount(addr1.address)
       ).to.equal(stakeAmount);
+      expect(addr1StakedBalance).to.equal(stakeAmount);
     });
 
     it("stake(): Should allow a single user to stake multiple times within specified limits", async () => {
@@ -126,7 +157,7 @@ describe("PillarStakingContract", () => {
   });
 
   describe("Unstaking PLR and earning rewards", () => {
-    it("unstake(): Should allow a user to unstake their total staked balance and earned rewards", async () => {
+    it("unstake(): Should allow a user to unstake their total staked balance and earned rewards (no prior reward calculation)", async () => {
       await plrStaking.connect(owner).setStateStakeable();
       const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
       const rewardAmount = "71000000000000000000"; // 71 ETH
@@ -142,9 +173,42 @@ describe("PillarStakingContract", () => {
       await plrStaking.connect(owner).setStateStaked();
       await time.increase(oneYearOneWeek);
       await plrStaking.connect(owner).setStateReadyForUnstake();
-      await plrStaking.connect(owner).depositRewards(rewardAmount);
+      await plrStaking.connect(owner).setRewards(rewardAmount);
+      await plrStakedToken
+        .connect(addr1)
+        .approve(plrStaking.address, stakeAmount);
       await plrStaking.connect(addr1).unstake();
       expect(await plrToken.balanceOf(plrStaking.address)).to.equal(0);
+      expect(await plrStakedToken.balanceOf(addr1.address)).to.equal(0);
+      expect(await wethToken.balanceOf(addr1.address)).to.equal(
+        ethers.utils.parseEther("71")
+      ); // 100% of reward as only staker
+    });
+
+    it("unstake(): Should allow a user to unstake their total staked balance and earned rewards (prior reward calculation)", async () => {
+      await plrStaking.connect(owner).setStateStakeable();
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      const rewardAmount = "71000000000000000000"; // 71 ETH
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      expect(await plrStaking.totalStaked()).to.equal(stakeAmount);
+      expect(await plrToken.balanceOf(plrStaking.address)).to.equal(
+        stakeAmount
+      );
+      expect(
+        await plrStaking.getStakedAmountForAccount(addr1.address)
+      ).to.equal(stakeAmount);
+      await time.increase(elevenDays);
+      await plrStaking.connect(owner).setStateStaked();
+      await time.increase(oneYearOneWeek);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await plrStaking.connect(owner).setRewards(rewardAmount);
+      await plrStakedToken
+        .connect(addr1)
+        .approve(plrStaking.address, stakeAmount);
+      await plrStaking.connect(addr1).calculateRewardAllocation(addr1.address);
+      await plrStaking.connect(addr1).unstake();
+      expect(await plrToken.balanceOf(plrStaking.address)).to.equal(0);
+      expect(await plrStakedToken.balanceOf(addr1.address)).to.equal(0);
       expect(await wethToken.balanceOf(addr1.address)).to.equal(
         ethers.utils.parseEther("71")
       ); // 100% of reward as only staker
@@ -163,18 +227,46 @@ describe("PillarStakingContract", () => {
       expect(
         await plrStaking.getStakedAmountForAccount(addr2.address)
       ).to.equal(stakeAmount2);
+      expect(await plrStakedToken.balanceOf(addr1.address)).to.equal(
+        stakeAmount1
+      );
+      expect(await plrStakedToken.balanceOf(addr2.address)).to.equal(
+        stakeAmount2
+      );
+      await plrStaking.connect(owner).setRewards(rewardAmount);
       await plrStaking.connect(owner).setStateReadyForUnstake();
-      await plrStaking.connect(owner).depositRewards(rewardAmount);
+      await plrStakedToken
+        .connect(addr1)
+        .approve(plrStaking.address, stakeAmount1);
+      await plrStakedToken
+        .connect(addr2)
+        .approve(plrStaking.address, stakeAmount2);
       await plrStaking.connect(addr1).unstake();
       const bal = await wethToken.balanceOf(plrStaking.address);
       await plrStaking.connect(addr2).unstake();
       expect(await plrToken.balanceOf(plrStaking.address)).to.equal(0);
+      expect(await plrStakedToken.balanceOf(addr1.address)).to.equal(0);
+      expect(await plrStakedToken.balanceOf(addr2.address)).to.equal(0);
       expect(await wethToken.balanceOf(addr1.address)).to.equal(
         ethers.utils.parseEther("20.9979")
       );
       expect(await wethToken.balanceOf(addr2.address)).to.equal(
         ethers.utils.parseEther("41.9958")
       );
+    });
+  });
+
+  describe("Calculating reward allocation", () => {
+    it("calculateRewardAllocation(): should calculate a user's reward allocation", async () => {
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      const rewardAmount = "63000000000000000000"; // 63 ETH
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      await plrStaking.connect(owner).setRewards(rewardAmount);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await plrStaking.connect(addr1).calculateRewardAllocation(addr1.address);
+      const reward = await plrStaking.getRewardAmountForAccount(addr1.address);
+      expect(reward).to.equal(ethers.utils.parseEther("63"));
     });
   });
 
@@ -248,6 +340,32 @@ describe("PillarStakingContract", () => {
     });
   });
 
+  describe("Viewing reward amount", () => {
+    it("getRewardAmountForAccount(): Should return zero for a user that has not calculated their rewards", async () => {
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      expect(
+        await plrStaking.getRewardAmountForAccount(addr2.address)
+      ).to.equal(0);
+    });
+
+    it("getRewardAmountForAccount(): Should return reward amounts for users", async () => {
+      const stakeAmount1 = "10000000000000000000000"; // 10,000 PLR;
+      const stakeAmount2 = "20000000000000000000000"; // 20,000 PLR;
+      const rewardAmount = "63000000000000000000"; // 63 ETH
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stakeAmount1);
+      await plrStaking.connect(addr2).stake(stakeAmount2);
+      await plrStaking.connect(owner).setRewards(rewardAmount);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await plrStaking.connect(addr1).calculateRewardAllocation(addr1.address);
+      await plrStaking.connect(addr2).calculateRewardAllocation(addr2.address);
+      const reward1 = await plrStaking.getRewardAmountForAccount(addr1.address);
+      const reward2 = await plrStaking.getRewardAmountForAccount(addr2.address);
+      expect(reward1).to.equal(ethers.utils.parseEther("20.9979"));
+      expect(reward2).to.equal(ethers.utils.parseEther("41.9958"));
+    });
+  });
+
   describe("Updating/viewing contract state", () => {
     it("setStateStakeable(): Should update staking state from INITIALIZED to STAKEABLE", async () => {
       await plrStaking.connect(owner).setStateStakeable();
@@ -286,20 +404,18 @@ describe("PillarStakingContract", () => {
   });
 
   describe("Depositing rewards", () => {
-    it("depositRewards(): Should allow the contract owner to deposit reward tokens", async () => {
+    it("setRewards(): Should allow the contract owner to deposit reward tokens", async () => {
       const rewards = ethers.utils.parseEther("100");
-      await plrStaking.connect(owner).depositRewards(rewards);
+      await plrStaking.connect(owner).setRewards(rewards);
       const wethBalance = await wethToken.balanceOf(plrStaking.address);
       expect(wethBalance).to.equal(rewards);
     });
   });
 
   describe("Function permissions", () => {
-    it("depositRewards(): Error checks - should only allow owner to call", async () => {
+    it("setRewards(): Error checks - should only allow owner to call", async () => {
       await expectRevert(
-        plrStaking
-          .connect(addr1)
-          .depositRewards(ethers.utils.parseEther("100")),
+        plrStaking.connect(addr1).setRewards(ethers.utils.parseEther("100")),
         "Ownable: caller is not the owner"
       );
     });
@@ -367,6 +483,16 @@ describe("PillarStakingContract", () => {
       );
     });
 
+    it("calculateRewardAllocation(): should trigger contract state (READY_FOR_UNSTAKE) check", async () => {
+      const stake = "10000000000000000000000"; // 10,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stake);
+      await expectRevert(
+        plrStaking.calculateRewardAllocation(addr1.address),
+        "OnlyWhenReadyForUnstake"
+      );
+    });
+
     it("updateMinStakeLimit(): Error checks - should trigger contract state (STAKEABLE) check", async () => {
       await expectRevert(
         plrStaking.connect(owner).updateMinStakeLimit(5000),
@@ -396,9 +522,10 @@ describe("PillarStakingContract", () => {
       const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
       await plrStaking.connect(addr1).stake(stakeAmount);
       await plrStaking.connect(owner).setStateReadyForUnstake();
-      await plrStaking
-        .connect(owner)
-        .depositRewards(ethers.utils.parseEther("71"));
+      await plrStaking.connect(owner).setRewards(ethers.utils.parseEther("71"));
+      await plrStakedToken
+        .connect(addr1)
+        .approve(plrStaking.address, stakeAmount);
       await expect(plrStaking.connect(addr1).unstake())
         .to.emit(plrStaking, "Unstaked")
         .withArgs(addr1.address, stakeAmount);
@@ -410,17 +537,34 @@ describe("PillarStakingContract", () => {
       const rewards = "71000000000000000000"; // 71 ETH
       await plrStaking.connect(addr1).stake(stakeAmount);
       await plrStaking.connect(owner).setStateReadyForUnstake();
-      await plrStaking.connect(owner).depositRewards(rewards);
+      await plrStaking.connect(owner).setRewards(rewards);
+      await plrStakedToken
+        .connect(addr1)
+        .approve(plrStaking.address, stakeAmount);
       await expect(plrStaking.connect(addr1).unstake())
         .to.emit(plrStaking, "RewardPaid")
         .withArgs(addr1.address, rewards);
     });
 
-    it("depositRewards(): Should emit an RewardsDeposited event on depositing rewards", async () => {
+    it("setRewards(): Should emit an RewardsDeposited event on depositing rewards", async () => {
       const rewards = "100000000000000000000"; // 100 ETH
-      await expect(await plrStaking.connect(owner).depositRewards(rewards))
-        .to.emit(plrStaking, "RewardsDeposited")
+      await expect(await plrStaking.connect(owner).setRewards(rewards))
+        .to.emit(plrStaking, "RewardsSet")
         .withArgs(rewards);
+    });
+
+    it("calculateRewardAllocation(): should emit RewardAllocated event on calculating rewards", async () => {
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      const rewardAmount = "63000000000000000000"; // 63 ETH
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      await plrStaking.connect(owner).setRewards(rewardAmount);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await expect(
+        await plrStaking.connect(addr1).calculateRewardAllocation(addr1.address)
+      )
+        .to.emit(plrStaking, "RewardAllocated")
+        .withArgs(addr1.address, rewardAmount);
     });
 
     it("updateMinStakeLimit(): Should emit an MinStakeAmountUpdated event", async () => {
@@ -548,7 +692,9 @@ describe("PillarStakingContract", () => {
       await plrStaking.connect(addr1).stake(stake);
       await plrStaking.connect(addr2).stake(stake);
       await plrStaking.connect(owner).setStateReadyForUnstake();
-      await plrStaking.connect(owner).depositRewards(rewardAmount);
+      await plrStaking.connect(owner).setRewards(rewardAmount);
+      await plrStakedToken.connect(addr1).approve(plrStaking.address, stake);
+      await plrStakedToken.connect(addr2).approve(plrStaking.address, stake);
       await plrStaking.connect(addr1).unstake();
       await plrStaking.connect(addr2).unstake();
       await expectRevert(
@@ -561,9 +707,23 @@ describe("PillarStakingContract", () => {
       );
     });
 
-    it("depositRewards(): Error checks - should trigger if attempted to deposit zero reward tokens", async () => {
+    it("calculateRewardAllocation(): Error checks - should trigger if attempted to calculate rewards more than once", async () => {
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      const rewardAmount = "63000000000000000000"; // 63 ETH
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      await plrStaking.connect(owner).setRewards(rewardAmount);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await plrStaking.connect(addr1).calculateRewardAllocation(addr1.address);
       await expectRevert(
-        plrStaking.connect(owner).depositRewards(0),
+        plrStaking.connect(addr1).calculateRewardAllocation(addr1.address),
+        "RewardsAlreadyCalculated()"
+      );
+    });
+
+    it("setRewards(): Error checks - should trigger if attempted to deposit zero reward tokens", async () => {
+      await expectRevert(
+        plrStaking.connect(owner).setRewards(0),
         "RewardsCannotBeZero()"
       );
     });
