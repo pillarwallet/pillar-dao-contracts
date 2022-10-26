@@ -163,7 +163,6 @@ Max contract stake limits are defaulted to 7.2m PLR (17e18) if 0 passed in as ar
 ### RewardsCannotBeZero
 * Fires if: Trying to deposit reward amount of 0.
 * Representation: `RewardsCannotBeZero()`
-
 ### RewardsAlreadyCalculated
 * Fires if: Trying to calculate reward allocation when it has already been done.
 * Representation: `RewardsAlreadyCalculated()`

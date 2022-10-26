@@ -50,7 +50,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
-    event RewardsSet(uint256 rewards);
+    event RewardsDeposited(uint256 rewards);
     event RewardAllocated(address user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
     event ContractStateUpdated(StakingState newState);
@@ -192,11 +192,11 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function setRewards(uint256 _amount) external onlyOwner {
+    function depositRewards(uint256 _amount) external onlyOwner {
         if (_amount == 0) revert RewardsCannotBeZero();
         rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
         rewards += _amount;
-        emit RewardsSet(_amount);
+        emit RewardsDeposited(_amount);
     }
 
     function updateMinStakeLimit(uint256 _amount)
