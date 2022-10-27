@@ -26,6 +26,7 @@ Upon staking users will get stkPLR tokens to represent their staked amount, whic
 
 Takes staking token address, reward token address, staked token address and max contract stake limits as arguments.  
 Max contract stake limits are defaulted to 7.2m PLR (17e18) if 0 passed in as argument, otherwise will be updated to new amount.
+Deploys PillarStakedToken in constructor to provider users with a 1:1 representation of their stake.
 
 &nbsp;  
 
@@ -101,15 +102,15 @@ Max contract stake limits are defaulted to 7.2m PLR (17e18) if 0 passed in as ar
 
 &nbsp;  
 
+### ZeroAddress
+* Fires if: Address is zero address.
+* Representation: `ZeroAddress()`
 ### InvalidRewardToken
 * Fires if: The reward token address passed in on contract deployment is the zero address.
 * Representation: `InvalidRewardToken()`
 ### InvalidStakingToken
 * Fires if: The staking token address passed in on contract deployment is the zero address.
 * Representation: `InvalidStakingToken()`
-* ### InvalidStakedToken
-* Fires if: The staked token address passed in on contract deployment is the zero address.
-* Representation: `InvalidStakedToken()`
 ### InvalidMinimumStake
 * Fires if: The attempted stake amount does not meet minimum stake requirements.
 * Representation: `InvalidMinimumStake(minimumStakeAmount)`
@@ -256,7 +257,6 @@ In a separate terminal window:
       <span style="color: green;">✔</span> unstake(): Should emit an Unstaked event on unstaking  
       <span style="color: green;">✔</span> unstake(): Should emit an RewardPaid event on unstaking (47ms)  
       <span style="color: green;">✔</span> setRewards(): Should emit an RewardsDeposited event on depositing rewards  
-      <span style="color: green;">✔</span> calculateRewardAllocation(): should emit RewardAllocated event on calculating rewards  
       <span style="color: green;">✔</span> updateMinStakeLimit(): Should emit an MinStakeAmountUpdated event  
       <span style="color: green;">✔</span> updateMaxStakeLimit(): Should emit an MaxStakeAmountUpdated event  
       <span style="color: green;">✔</span> setState<contract-state>(): Should emit ContractStateUpdated event  
@@ -298,18 +298,18 @@ File                      |  % Stmts | % Branch |  % Funcs |  % Lines |
 |--------------------------------------------------|---------------------------|---------------|-----------------------------|
 |  **Methods**                                                                                                                   
 |  **Contract**      |  **Method**                 |  **Min**    |  **Max**    |  **Avg**      | **# calls**   |
-|  PillarStaking     |  calculateRewardAllocation  |      54272  |      54284  |        54282  |            7  |          
-|  PillarStaking     |  setRewards                 |             |             |        90335  |           13  |
+|  PillarStaking     |  calculateRewardAllocation  |      52932  |      52944  |        52942  |            5  |          
+|  PillarStaking     |  depositRewards             |          -  |          -  |        90379  |           12  |
 |  PillarStaking     |  setStateInitialized        |          -  |          -  |        26857  |            3  |
-|  PillarStaking     |  setStateReadyForUnstake    |      31910  |      49010  |        34353  |           14  |
+|  PillarStaking     |  setStateReadyForUnstake    |      31865  |      48965  |        34496  |           13  |
 |  PillarStaking     |  setStateStakeable          |          -  |          -  |        68776  |           36  |
-|  PillarStaking     |  setStateStaked             |      53853  |      70953  |        60266  |            8  |
-|  PillarStaking     |  stake                      |      96619  |     246287  |       206239  |           33  |      
-|  PillarStaking     |  unstake                    |     114398  |     152332  |       138939  |           10  |
+|  PillarStaking     |  setStateStaked             |      53875  |      70975  |        60288  |            8  |
+|  PillarStaking     |  stake                      |      96641  |     246309  |       205010  |           32  |      
+|  PillarStaking     |  unstake                    |     114398  |     151001  |       137741  |           10  |
 |  PillarStaking     |  updateMaxStakeLimit        |      34053  |      34089  |        34075  |            5  |
 |  PillarStaking     |  updateMinStakeLimit        |      29170  |      34066  |        33082  |            5  |
 |  **Deployments**                                 |                                           |**% of limit** |             
-|  PillarStaking                                   |    1968445  |    1968469  |      1968466  |        6.6 %  |
+|  PillarStaking                                   |    3446847  |    3446871  |      3446870  |        11.5 % |
 
 &nbsp;  
 

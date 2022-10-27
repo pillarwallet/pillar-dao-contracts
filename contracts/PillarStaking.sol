@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IPillarStakingToken} from "./IPillarStakingToken.sol";
+import {PillarStakedToken} from "./PillarStakedToken.sol";
 
 /// @title PillarStaking
 /// @author Luke Wickens <luke@pillarproject.io>
@@ -16,7 +16,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     IERC20 public stakingToken;
     IERC20 public rewardToken;
-    IPillarStakingToken public stakedToken;
+    PillarStakedToken public stakedToken;
     address[] public stakeholderList;
     mapping(address => Stakeholder) public stakeholderData;
 
@@ -85,16 +85,14 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     constructor(
         address _stakingToken,
         address _rewardToken,
-        address _stakedToken,
         uint256 _maxTotalStake
     ) {
         if (_stakingToken == address(0)) revert InvalidStakingToken();
         if (_rewardToken == address(0)) revert InvalidRewardToken();
-        if (_stakedToken == address(0)) revert InvalidStakedToken();
         if (_maxTotalStake > 0) maxTotalStake = _maxTotalStake;
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
-        stakedToken = IPillarStakingToken(_stakedToken);
+        stakedToken = new PillarStakedToken();
         setStateInitialized();
     }
 
@@ -155,13 +153,13 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         public
         whenReadyForUnstake
     {
+        if (_staker == address(0)) revert ZeroAddress();
         if (stakeholderData[msg.sender].rewardAmount != 0)
             revert RewardsAlreadyCalculated();
         uint256 stakeAmount = getStakedAmountForAccount(_staker);
         uint256 stakedPercentage = ((stakeAmount * BPS) / totalStaked);
         uint256 reward = ((stakedPercentage * rewards) / BPS);
         stakeholderData[msg.sender].rewardAmount = reward;
-        emit RewardAllocated(_staker, reward);
     }
 
     /* ========== VIEWS ========== */
@@ -260,9 +258,9 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     /* ========== ERRORS ========== */
 
+    error ZeroAddress();
     error InvalidRewardToken();
     error InvalidStakingToken();
-    error InvalidStakedToken();
     error InvalidMinimumStake(uint256 minimumStakeAmount);
     error InvalidMaximumStake(uint256 maximumStakeAmount);
     error InsufficientBalance();

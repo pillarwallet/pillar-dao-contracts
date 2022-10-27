@@ -2,6 +2,7 @@ const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { expectRevert } = require("@openzeppelin/test-helpers");
+const contract = require("../artifacts/contracts/PillarStakedToken.sol/PillarStakedToken.json");
 
 const elevenDays = 11 * 24 * 60 * 60;
 const oneYearOneWeek = 53 * 7 * 24 * 60 * 60;
@@ -29,18 +30,17 @@ describe("PillarStakingContract", () => {
     const PillarToken = await ethers.getContractFactory("DummyPillarToken");
     plrToken = await PillarToken.deploy();
 
-    // deploy PillarStakingToken contract
-    const PillarStakedToken = await ethers.getContractFactory("StakedPillar");
-    plrStakedToken = await PillarStakedToken.deploy();
-
     // deploy PillarStaking contract
     const PillarStaking = await ethers.getContractFactory("PillarStaking");
     plrStaking = await PillarStaking.deploy(
       plrToken.address,
       wethToken.address,
-      plrStakedToken.address,
       0
     );
+
+    // get PillarStakedToken address & attach
+    stakeToken = await plrStaking.stakedToken();
+    plrStakedToken = new ethers.Contract(stakeToken, contract.abi, owner);
 
     // transfer dPLR & dWETH tokens to accounts
     await plrToken
@@ -61,12 +61,6 @@ describe("PillarStakingContract", () => {
     await wethToken
       .connect(owner)
       .approve(plrStaking.address, ethers.utils.parseEther("10000"));
-
-    // set staking contract as MINTER_ROLE in stkPLR
-    const MINTER_ROLE = await plrStakedToken.MINTER_ROLE();
-    await plrStakedToken
-      .connect(owner)
-      .grantRole(MINTER_ROLE, plrStaking.address);
   });
 
   // DEPLOYMENT //
@@ -89,18 +83,6 @@ describe("PillarStakingContract", () => {
       expect(wethTotalSupply).to.equal(ethers.utils.parseEther("1000000000"));
     });
 
-    it("Deploys Pillar Staked Token without errors", async () => {
-      const pStkName = await plrToken.name();
-      const pStkSymbol = await plrToken.symbol();
-      const role = ethers.utils.keccak256(
-        ethers.utils.toUtf8Bytes("MINTER_ROLE")
-      );
-      const isMinter = await plrStakedToken.hasRole(role, plrStaking.address);
-      expect(pStkName).to.equal("DummyPillarToken");
-      expect(pStkSymbol).to.equal("dPLR");
-      expect(isMinter).to.equal(true);
-    });
-
     it("Deploys Pillar Staking contract without errors", async () => {
       const psTokenAddress = await plrStaking.stakingToken();
       const psTokenMinStake = await plrStaking.minStake();
@@ -116,6 +98,18 @@ describe("PillarStakingContract", () => {
       expect(psStakingState).to.equal(0);
       expect(psStakingToken).to.equal(plrToken.address);
       expect(psRewardToken).to.equal(wethToken.address);
+    });
+
+    it("Deploys Pillar Staked Token from Staking contract without errors", async () => {
+      const pStkName = await plrStakedToken.name();
+      const pStkSymbol = await plrStakedToken.symbol();
+      const role = ethers.utils.keccak256(
+        ethers.utils.toUtf8Bytes("MINTER_ROLE")
+      );
+      const isMinter = await plrStakedToken.hasRole(role, plrStaking.address);
+      expect(pStkName).to.equal("Staked Pillar");
+      expect(pStkSymbol).to.equal("stkPLR");
+      expect(isMinter).to.equal(true);
     });
   });
 
@@ -555,20 +549,6 @@ describe("PillarStakingContract", () => {
       await expect(await plrStaking.connect(owner).depositRewards(rewards))
         .to.emit(plrStaking, "RewardsDeposited")
         .withArgs(rewards);
-    });
-
-    it("calculateRewardAllocation(): should emit RewardAllocated event on calculating rewards", async () => {
-      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
-      const rewardAmount = "63000000000000000000"; // 63 ETH
-      await plrStaking.connect(owner).setStateStakeable();
-      await plrStaking.connect(addr1).stake(stakeAmount);
-      await plrStaking.connect(owner).depositRewards(rewardAmount);
-      await plrStaking.connect(owner).setStateReadyForUnstake();
-      await expect(
-        await plrStaking.connect(addr1).calculateRewardAllocation(addr1.address)
-      )
-        .to.emit(plrStaking, "RewardAllocated")
-        .withArgs(addr1.address, rewardAmount);
     });
 
     it("updateMinStakeLimit(): Should emit an MinStakeAmountUpdated event", async () => {
