@@ -691,6 +691,21 @@ describe("PillarStakingContract", () => {
       );
     });
 
+    it("calculateRewardAllocation(): Error checks - should trigger if argument is zero address", async () => {
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
+      const rewardAmount = "63000000000000000000"; // 63 ETH
+      await plrStaking.connect(owner).setStateStakeable();
+      await plrStaking.connect(addr1).stake(stakeAmount);
+      await plrStaking.connect(owner).depositRewards(rewardAmount);
+      await plrStaking.connect(owner).setStateReadyForUnstake();
+      await expectRevert(
+        plrStaking
+          .connect(addr1)
+          .calculateRewardAllocation(ethers.constants.AddressZero),
+        "ZeroAddress()"
+      );
+    });
+
     it("calculateRewardAllocation(): Error checks - should trigger if attempted to calculate rewards more than once", async () => {
       const stakeAmount = "10000000000000000000000"; // 10,000 PLR;
       const rewardAmount = "63000000000000000000"; // 63 ETH

@@ -270,6 +270,7 @@ In a separate terminal window:
       <span style="color: green;">✔</span> stake(): Error checks - should trigger maximum personal stake amount check  
       <span style="color: green;">✔</span> stake(): Error checks - should trigger maximum total stake reached amount check  
       <span style="color: green;">✔</span> unstake(): Error checks - should trigger error is user tries to unstake and claim rewards twice  
+      <span style="color: green;">✔</span> calculateRewardAllocation(): Error checks - should trigger if argument is zero address  
       <span style="color: green;">✔</span> calculateRewardAllocation(): Error checks - should trigger if attempted to calculate rewards more than once  
       <span style="color: green;">✔</span> setRewards(): Error checks - should trigger if attempted to deposit zero reward tokens  
       <span style="color: green;">✔</span> setStateReadyForUnstake(): Error checks - should trigger if staked period < 12 months  
