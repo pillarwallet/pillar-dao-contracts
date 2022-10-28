@@ -134,7 +134,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         if (stakeholderData[msg.sender].claimed)
             revert UserAlreadyClaimedRewards(msg.sender);
         if (stakeholderData[msg.sender].rewardAmount == 0) {
-            calculateRewardAllocation(msg.sender);
+            eligibleRewardAmount(msg.sender);
             rewardAmount = getRewardAmountForAccount(msg.sender);
         } else {
             rewardAmount = stakeholderData[msg.sender].rewardAmount;
@@ -149,10 +149,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         emit RewardPaid(msg.sender, rewardAmount);
     }
 
-    function calculateRewardAllocation(address _staker)
-        public
-        whenReadyForUnstake
-    {
+    function eligibleRewardAmount(address _staker) public whenReadyForUnstake {
         if (_staker == address(0)) revert ZeroAddress();
         if (stakeholderData[msg.sender].rewardAmount != 0)
             revert RewardsAlreadyCalculated();

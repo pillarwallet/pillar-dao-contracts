@@ -9,7 +9,7 @@ contract PillarStakedToken is ERC20, ERC20Burnable, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor() ERC20("Staked Pillar", "stkPLR") {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, tx.origin);
         _grantRole(MINTER_ROLE, msg.sender);
     }
 

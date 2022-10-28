@@ -36,7 +36,7 @@ Deploys PillarStakedToken in constructor to provider users with a 1:1 representa
 
 * `stake` - Allows users to stake their PLR tokens into the contract. This can only be done when the contract state is STAKEABLE. The amount staked has to be >= the minimum stake limit, <= the maximum stake limit and <= the maximum allowed staking amount of the contract. Stake amount should be given in wei. After the staking period has passed, no more staking will be allowed.
 * `unstake` - Allows users to withdraw their tokens from the contract and claim the rewards they have earned. This can only be done when the contract state is READY_FOR_UNSTAKE.
-* `calculateRewardAllocation` - Allows users to calculate their rewards before unstaking. This is not required as it will be determined in `unstake` whether this has been done, and if not then call it. This can only be done when the contract state is READY_FOR_UNSTAKE.
+* `eligibleRewardAmount` - Allows users to calculate their rewards before unstaking. This is not required as it will be determined in `unstake` whether this has been done, and if not then call it. This can only be done when the contract state is READY_FOR_UNSTAKE.
 * `getContractState` - Allows users to see the current state of the contract. The four states are:
   * `INITIALIZED` - The contract has been initialized, however staking cannot yet be performed.
   * `STAKEABLE` - The contract has been opened for staking. Users can now stake tokens in the contract (which will be open for a specific time window).
@@ -215,7 +215,7 @@ In a separate terminal window:
       <span style="color: green;">✔</span> unstake(): Should allow a user to unstake their total staked balance and earned rewards (prior reward calculation)  
       <span style="color: green;">✔</span> unstake(): Should allow multiple users to unstake their total staked balance and earned rewards (84ms)  
     **Calculating reward allocation**  
-      <span style="color: green;">✔</span> calculateRewardAllocation(): should calculate a user's reward allocation  
+      <span style="color: green;">✔</span> eligibleRewardAmount(): should calculate a user's reward allocation  
     **Updating max stake limit**  
       <span style="color: green;">✔</span> updateMaxStakeLimit(): Should allow decreasing of maximum stake  
       <span style="color: green;">✔</span> updateMaxStakeLimit(): Should allow increasing of maximum stake  
@@ -240,7 +240,7 @@ In a separate terminal window:
     **Depositing rewards**  
       <span style="color: green;">✔</span> setRewards(): Should allow the contract owner to deposit reward tokens  
     **Function permissions**  
-      <span style="color: green;">✔</span> calculateRewardAllocation(): Error checks - should only allow owner to call  
+      <span style="color: green;">✔</span> eligibleRewardAmount(): Error checks - should only allow owner to call  
       <span style="color: green;">✔</span> setStateInitialized(): Error checks - should only allow owner to call  
       <span style="color: green;">✔</span> setStateStakeable(): Error checks - should only allow owner to call  
       <span style="color: green;">✔</span> setStateStakeable(): Error checks - should only allow owner to call  
@@ -270,8 +270,8 @@ In a separate terminal window:
       <span style="color: green;">✔</span> stake(): Error checks - should trigger maximum personal stake amount check  
       <span style="color: green;">✔</span> stake(): Error checks - should trigger maximum total stake reached amount check  
       <span style="color: green;">✔</span> unstake(): Error checks - should trigger error is user tries to unstake and claim rewards twice  
-      <span style="color: green;">✔</span> calculateRewardAllocation(): Error checks - should trigger if argument is zero address  
-      <span style="color: green;">✔</span> calculateRewardAllocation(): Error checks - should trigger if attempted to calculate rewards more than once  
+      <span style="color: green;">✔</span> eligibleRewardAmount(): Error checks - should trigger if argument is zero address  
+      <span style="color: green;">✔</span> eligibleRewardAmount(): Error checks - should trigger if attempted to calculate rewards more than once  
       <span style="color: green;">✔</span> setRewards(): Error checks - should trigger if attempted to deposit zero reward tokens  
       <span style="color: green;">✔</span> setStateReadyForUnstake(): Error checks - should trigger if staked period < 12 months  
 
@@ -299,7 +299,7 @@ File                      |  % Stmts | % Branch |  % Funcs |  % Lines |
 |--------------------------------------------------|---------------------------|---------------|-----------------------------|
 |  **Methods**                                                                                                                   
 |  **Contract**      |  **Method**                 |  **Min**    |  **Max**    |  **Avg**      | **# calls**   |
-|  PillarStaking     |  calculateRewardAllocation  |      52932  |      52944  |        52942  |            5  |          
+|  PillarStaking     |  eligibleRewardAmount       |      52932  |      52944  |        52942  |            5  |          
 |  PillarStaking     |  depositRewards             |          -  |          -  |        90379  |           12  |
 |  PillarStaking     |  setStateInitialized        |          -  |          -  |        26857  |            3  |
 |  PillarStaking     |  setStateReadyForUnstake    |      31865  |      48965  |        34496  |           13  |
