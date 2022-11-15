@@ -154,6 +154,9 @@ describe("PillarStakingContract", () => {
       expect(
         await plrStaking.getStakedAmountForAccount(addr1.address)
       ).to.equal(totalStaked);
+      expect(await plrStakedToken.balanceOf(addr1.address)).to.equal(
+        totalStaked
+      );
     });
   });
 
@@ -414,6 +417,16 @@ describe("PillarStakingContract", () => {
   });
 
   describe("Function permissions", () => {
+    it("stkPLR - transfer(): should not let anyone but staking contract transfer stkPLR tokens", async () => {
+      const stakeAmount = "10000000000000000000000"; // 10,000 PLR
+      await plrStaking.connect(owner).setStateStakeable();
+      const tx = await plrStaking.connect(addr1).stake(stakeAmount);
+      await tx.wait();
+      await expectRevert.unspecified(
+        plrStakedToken.connect(addr1).transfer(addr2.address, 1000)
+      );
+    });
+
     it("depositRewards(): Error checks - should only allow owner to call", async () => {
       await expectRevert(
         plrStaking

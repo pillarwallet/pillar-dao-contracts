@@ -3,12 +3,12 @@ const { ethers, run } = require("hardhat");
 const main = async () => {
   await run("compile");
 
-  const stakingToken = "0x267c85113BAfbBe829918fB4c23135af72c9C472"; // add staking token address here (PLR - Goerli)
-  const rewardToken = "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"; // add reward token address here (WETH - Goerli)
-  const stakeToken = ""; // add stkPLR token address here
+  const stakingToken = "0xdCd12725998BE4b2b0E7ff903082C87cBbb8aa0c"; // add staking token address here (PLR - Goerli)
+  // const rewardToken = "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"; // add reward token address here (WETH - Goerli)
+  const rewardToken = "0x3589A8A32483e4595Db2EaF127491b316d1883d5"; // Dummy WETH token (testing purposes)
   const maxTotalStake = 0; // will default to 7.2m PLR
 
-  const values = [stakingToken, rewardToken, stakeToken, maxTotalStake];
+  const values = [stakingToken, rewardToken, maxTotalStake];
 
   // Deploy Pillar Staking contract
   const PillarStaking = await ethers.getContractFactory("PillarStaking");

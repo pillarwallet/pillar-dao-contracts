@@ -16,4 +16,14 @@ contract PillarStakedToken is ERC20, ERC20Burnable, AccessControl {
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
         _mint(to, amount);
     }
+
+    // override transfer function to not allow transfers except from MINTER_ROLE (staking contract);
+    function transfer(address to, uint256 amount)
+        public
+        override
+        onlyRole(MINTER_ROLE)
+        returns (bool)
+    {
+        _transfer(msg.sender, to, amount);
+    }
 }
