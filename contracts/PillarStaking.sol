@@ -140,10 +140,12 @@ contract PillarStaking is ReentrancyGuard, Ownable {
             rewardAmount = stakeholderData[msg.sender].rewardAmount;
         }
         uint256 stakedBalance = stakeholderData[msg.sender].stakedAmount;
+        stakeholderData[msg.sender].stakedAmount = 0;
         stakeholderData[msg.sender].staked = false;
         stakedToken.burnFrom(msg.sender, stakedBalance);
         stakingToken.safeTransfer(msg.sender, stakedBalance);
         stakeholderData[msg.sender].claimed = true;
+        stakeholderData[msg.sender].rewardAmount = 0;
         rewardToken.safeTransfer(msg.sender, rewardAmount);
         emit Unstaked(msg.sender, stakedBalance);
         emit RewardPaid(msg.sender, rewardAmount);

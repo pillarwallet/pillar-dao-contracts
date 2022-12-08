@@ -3,9 +3,52 @@ const { ethers, run } = require("hardhat");
 const main = async () => {
   await run("compile");
 
-  const stakingToken = "0xdCd12725998BE4b2b0E7ff903082C87cBbb8aa0c"; // add staking token address here (PLR - Goerli)
-  // const rewardToken = "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"; // add reward token address here (WETH - Goerli)
-  const rewardToken = "0x3589A8A32483e4595Db2EaF127491b316d1883d5"; // Dummy WETH token (testing purposes)
+  // /* FOR TESTING PURPOSES */
+  // // Deploy DummyPillarToken contract
+  // const DummyPillar = await ethers.getContractFactory("DummyPillarToken");
+  // const dummyPillar = await DummyPillar.deploy();
+  // await dummyPillar.deployed();
+  // const dummyPillarAddress = await dummyPillar.address;
+
+  // console.log(
+  //   "DummyPillarToken - deployed to address with values: ",
+  //   dummyPillar.address
+  // );
+
+  // // Wait for 5 block transactions to ensure deployment before verifying
+  // await dummyPillar.deployTransaction.wait(5);
+
+  // // Verify contract on Etherscan
+  // await hre.run("verify:verify", {
+  //   address: dummyPillar.address,
+  //   contract: "contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken",
+  //   constructorArguments: [],
+  // });
+
+  // // Deploy DummyWETHToken contract
+  // const DummyWETH = await ethers.getContractFactory("DummyWETHToken");
+  // const dummyWETH = await DummyWETH.deploy();
+  // await dummyWETH.deployed();
+  // const dummyWETHAddress = await dummyWETH.address;
+
+  // console.log(
+  //   "DummyWETHToken - deployed to address with values: ",
+  //   dummyWETH.address
+  // );
+
+  // // Wait for 5 block transactions to ensure deployment before verifying
+  // await dummyWETH.deployTransaction.wait(5);
+
+  // // Verify contract on Etherscan
+  // await hre.run("verify:verify", {
+  //   address: dummyWETH.address,
+  //   contract: "contracts/testing_utils/DummyWETHToken.sol:DummyWETHToken",
+  //   constructorArguments: [],
+  // });
+  // //////////////////////////
+
+  const stakingToken = "0xb7c5A2edC0c2e13104f0eDc5F237Df766ff134A8"; // add staking token address here (dPLR - Goerli)
+  const rewardToken = "0x18D30e7a8e46C33BDb97E749b82130EBB7967C56"; // add reward token address here (dWETH - Goerli)
   const maxTotalStake = 0; // will default to 7.2m PLR
 
   const values = [stakingToken, rewardToken, maxTotalStake];
@@ -22,7 +65,7 @@ const main = async () => {
   );
 
   // Wait for 5 block transactions to ensure deployment before verifying
-  await pillarStaking.deployTransaction.wait(5);
+  await pillarStaking.deployTransaction.wait(6);
 
   // Verify contract on Etherscan
   await hre.run("verify:verify", {
