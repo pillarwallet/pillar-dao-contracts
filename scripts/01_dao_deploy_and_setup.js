@@ -2,7 +2,7 @@ const hre = require('hardhat');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // PLR Token MATIC
+  const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // PLR Token Polygon
 
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
