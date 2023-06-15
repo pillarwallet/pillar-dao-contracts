@@ -7,11 +7,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {PillarStakedToken} from "./PillarStakedToken.sol";
 
-/// @title PillarStaking
-/// @author Luke Wickens <luke@pillarproject.io>
-/// @notice staking contract for PLR tokens
-
-contract PillarStaking is ReentrancyGuard, Ownable {
+contract PStaking is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     IERC20 public stakingToken;
@@ -171,19 +167,15 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         return stakeholderList;
     }
 
-    function getStakedAmountForAccount(address account)
-        public
-        view
-        returns (uint256 amount)
-    {
+    function getStakedAmountForAccount(
+        address account
+    ) public view returns (uint256 amount) {
         return stakeholderData[account].stakedAmount;
     }
 
-    function getRewardAmountForAccount(address account)
-        public
-        view
-        returns (uint256 amount)
-    {
+    function getRewardAmountForAccount(
+        address account
+    ) public view returns (uint256 amount) {
         return stakeholderData[account].rewardAmount;
     }
 
@@ -196,11 +188,9 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         emit RewardsDeposited(_amount);
     }
 
-    function updateMinStakeLimit(uint256 _amount)
-        external
-        onlyOwner
-        whenStakeable
-    {
+    function updateMinStakeLimit(
+        uint256 _amount
+    ) external onlyOwner whenStakeable {
         if (maxStake < _amount)
             revert ProposedMinStakeTooHigh({
                 currentMax: maxStake,
@@ -211,11 +201,9 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         emit MinStakeAmountUpdated(_amount);
     }
 
-    function updateMaxStakeLimit(uint256 _amount)
-        external
-        onlyOwner
-        whenStakeable
-    {
+    function updateMaxStakeLimit(
+        uint256 _amount
+    ) external onlyOwner whenStakeable {
         if (minStake > _amount)
             revert ProposedMaxStakeTooLow({
                 currentMin: minStake,
@@ -283,4 +271,13 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     error RewardsCannotBeZero();
     error RewardsAlreadyCalculated();
     error UserAlreadyClaimedRewards(address _address);
+
+    /* ========== TEST ONLY FUNCTIONS ========== */
+
+    function overrideStakeLockup() external onlyOwner {
+        // for overriding 52 week lock up period
+        // allows for testing unstaking
+        state = StakingState.READY_FOR_UNSTAKE;
+        emit ContractStateUpdated(state);
+    }
 }

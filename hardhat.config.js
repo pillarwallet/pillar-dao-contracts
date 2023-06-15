@@ -1,20 +1,20 @@
-require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-etherscan");
-require("hardhat-gas-reporter");
-require("hardhat-tracer");
-require("solidity-coverage");
+require('@nomiclabs/hardhat-waffle');
+require('@nomiclabs/hardhat-etherscan');
+require('hardhat-gas-reporter');
+require('hardhat-tracer');
+require('solidity-coverage');
 
-const { resolve } = require("path");
-const { config: dotenvConfig } = require("dotenv");
+const { resolve } = require('path');
+const { config: dotenvConfig } = require('dotenv');
 
-dotenvConfig({ path: resolve(__dirname, "./.env") });
+dotenvConfig({ path: resolve(__dirname, './.env') });
 
 module.exports = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: 'hardhat',
   networks: {
     hardhat: {},
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    mainnet: {
+      url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_MAINNET_API_KEY}`,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
     },
     mumbai: {
@@ -31,12 +31,12 @@ module.exports = {
     },
   },
   gasReporter: {
-    currency: "USD",
+    currency: 'USD',
     gasPrice: 100,
   },
   etherscan: {
     apiKey: {
-      rinkeby: process.env.ETHERSCAN_API_KEY,
+      mainnet: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYSCAN_API_KEY,
       goerli: process.env.ETHERSCAN_API_KEY,
     },
@@ -44,27 +44,27 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.0",
+        version: '0.8.0',
         settings: {
           optimizer: {
             enabled: true,
             runs: 10000,
           },
           outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
+            '*': {
+              '*': ['storageLayout'],
             },
           },
         },
-        version: "0.8.4",
+        version: '0.8.4',
         settings: {
           optimizer: {
             enabled: true,
             runs: 10000,
           },
           outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
+            '*': {
+              '*': ['storageLayout'],
             },
           },
         },
@@ -72,10 +72,10 @@ module.exports = {
     ],
   },
   paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts",
+    sources: './contracts',
+    tests: './test',
+    cache: './cache',
+    artifacts: './artifacts',
   },
   mocha: {
     timeout: 40000,
