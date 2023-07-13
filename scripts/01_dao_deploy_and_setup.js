@@ -1,6 +1,7 @@
 const hre = require('hardhat');
 
 async function main() {
+  const NFT_IMAGE_LINK = ''; // Set NFT image link
   const [deployer] = await ethers.getSigners();
   const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // PLR Token Polygon
 
@@ -22,7 +23,7 @@ async function main() {
   //   contract: 'contracts/helpers/TestToken.sol:TestToken',
   // });
 
-  // // Deploy PillarDAO contract
+  // Deploy PillarDAO contract
   // const stakingToken = pillarToken.address;
 
   // Deploy Membership NFT contract
@@ -45,7 +46,6 @@ async function main() {
   });
 
   const stakingAmount = ethers.utils.parseEther('10000');
-
   const values = [stakingToken, stakingAmount, membershipNFT.address];
 
   const PillarDAOFactory = await ethers.getContractFactory('PillarDAO');
@@ -72,8 +72,14 @@ async function main() {
   await membershipNFT
     .connect(deployer)
     .setVaultAddress(pillarDaoContract.address);
-
   console.log(`Vault Address set to: ${pillarDaoContract.address}`);
+
+  // Set MembershipNFT baseURI (has to be from vault address)
+  await pillarDaoContract.connect(deployer).setMembershipURI(NFT_IMAGE_LINK);
+
+  // Sanity check on MembershipNFT to check baseURI
+  const baseURI = await membershipNFT.baseURI();
+  console.log(`baseURI set to: ${baseURI}`);
 }
 
 main()

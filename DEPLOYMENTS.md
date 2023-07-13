@@ -2,5 +2,5 @@
 
 | contract name | network | contract address | transaction hash |  
 | --- | --- | --- |  --- | 
-| `MembershipNFT` | `polygon` | [0xdC0C74Fb0faffFdB88b91cfa8493e6B06e02f01f](https://polygonscan.com/address/0xdC0C74Fb0faffFdB88b91cfa8493e6B06e02f01f) | [0x23d175d6f84aa265a6ade2c9fac191b762ac609e3d93b4a49baa57362d1c9609](https://polygonscan.com/tx/0x23d175d6f84aa265a6ade2c9fac191b762ac609e3d93b4a49baa57362d1c9609) | 
-| `PillarDAO` | `polygon` | [0x3D89BEeb319F5cD195aC6576c992d1D11a199f23](https://polygonscan.com/address/0x3D89BEeb319F5cD195aC6576c992d1D11a199f23) | [0x8149a4e00447c2cb57df29f0886c5246405f7ac0031202b0955d2c1e35907316](https://polygonscan.com/tx/0x8149a4e00447c2cb57df29f0886c5246405f7ac0031202b0955d2c1e35907316) | 
+| `MembershipNFT` | `polygon` | [0xdf092214989eD7f73bAEf99D651E5e721e0e7F11](https://polygonscan.com/address/0xdf092214989eD7f73bAEf99D651E5e721e0e7F11) | [0x4ee61c1d77fbda488af1ca9050db5c22d68b3a56e7ab32eb737d8777f58a1076](https://polygonscan.com/tx/0x4ee61c1d77fbda488af1ca9050db5c22d68b3a56e7ab32eb737d8777f58a1076) | 
+| `PillarDAO` | `polygon` | [0x5f27D6a580394feAE9788eCe5E32dc58C4E1EE61](https://polygonscan.com/address/0x5f27D6a580394feAE9788eCe5E32dc58C4E1EE61) | [0xa22779941bace1e23aac4f24acc5afa8820be8d33451ec9c91600a5b6c1e0f90](https://polygonscan.com/tx/0xa22779941bace1e23aac4f24acc5afa8820be8d33451ec9c91600a5b6c1e0f90) | 

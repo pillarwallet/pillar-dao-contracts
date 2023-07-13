@@ -21,42 +21,63 @@ contract PillarDAO is IPillarDAO, Ownable {
         uint256 depositTime;
     }
 
-    mapping (address => Deposit) private balances;
-    mapping (address => uint256) private memberships;
+    mapping(address => Deposit) private balances;
+    mapping(address => uint256) private memberships;
 
     constructor(
         address _stakingToken,
         uint _stakeAmount,
         address _membershipNft
     ) public {
-        require(_stakingToken != address(0), "Invalid staking contract");
-        require(_stakeAmount > 0, "Invalid staking amount");
+        require(
+            _stakingToken != address(0),
+            "PillarDAO:: invalid staking contract"
+        );
+        require(_stakeAmount > 0, "PillarDAO:: invalid staking amount");
         stakingToken = _stakingToken;
         stakeAmount = _stakeAmount;
         membershipNFT = MembershipNFT(_membershipNft);
     }
 
-    function deposit(uint _amount) override external {
-        require(_amount==stakeAmount, "Invalid staked amount");
-        require(memberships[msg.sender] == 0,"User is already a member");
-        
+    function deposit(uint _amount) external override {
+        require(_amount == stakeAmount, "PillarDAO:: invalid staked amount");
+        require(
+            memberships[msg.sender] == 0,
+            "PillarDAO:: user is already a member"
+        );
+
         IERC20 token = IERC20(stakingToken);
-        require(token.allowance(msg.sender, address(this)) >= _amount, "Not enough allowance");
-        
+        require(
+            token.allowance(msg.sender, address(this)) >= _amount,
+            "PillarDAO:: not enough allowance"
+        );
+
         token.safeTransferFrom(msg.sender, address(this), _amount);
         memberships[msg.sender] = membershipNFT.mint(msg.sender);
 
-        emit DepositEvent(msg.sender,memberships[msg.sender]);
-        balances[msg.sender] = Deposit({depositAmount: _amount, depositTime: block.timestamp});
+        emit DepositEvent(msg.sender, memberships[msg.sender]);
+        balances[msg.sender] = Deposit({
+            depositAmount: _amount,
+            depositTime: block.timestamp
+        });
     }
 
-    function withdraw() override external {
-        require(balances[msg.sender].depositAmount > 0, "Insufficient balance to withdraw");
-        require((block.timestamp - balances[msg.sender].depositTime) > 52 weeks, "Too early to withdraw");
-        require(memberships[msg.sender] > 0, "Membership does not exists!");
+    function withdraw() external override {
+        require(
+            balances[msg.sender].depositAmount > 0,
+            "PillarDAO:: insufficient balance to withdraw"
+        );
+        require(
+            (block.timestamp - balances[msg.sender].depositTime) > 52 weeks,
+            "PillarDAO:: too early to withdraw"
+        );
+        require(
+            memberships[msg.sender] > 0,
+            "PillarDAO:: membership does not exists!"
+        );
 
         IERC20 token = IERC20(stakingToken);
-        token.safeTransfer(msg.sender,stakeAmount);
+        token.safeTransfer(msg.sender, stakeAmount);
         membershipNFT.burn(memberships[msg.sender]);
         emit WithdrawEvent(msg.sender, memberships[msg.sender]);
 
@@ -73,7 +94,7 @@ contract PillarDAO is IPillarDAO, Ownable {
     }
 
     function canUnstake(address _to) external view returns (bool) {
-        if((block.timestamp - balances[_to].depositTime) >= 52 weeks) {
+        if ((block.timestamp - balances[_to].depositTime) >= 52 weeks) {
             return true;
         }
         return false;
@@ -93,18 +114,21 @@ contract PillarDAO is IPillarDAO, Ownable {
     }
 
     function withdrawTokenToOwner(address _token) external onlyOwner {
-        require(_token != address(0), "Invalid token address");
-        require(_token != stakingToken, "Cannot withdraw staking token");
+        require(_token != address(0), "PillarDAO:: invalid token address");
+        require(
+            _token != stakingToken,
+            "PillarDAO:: cannot withdraw staking token"
+        );
 
         IERC20 token = IERC20(_token);
         uint256 balance = token.balanceOf(address(this));
 
-        if(balance > 0) {
-            token.safeTransfer(msg.sender,balance);
+        if (balance > 0) {
+            token.safeTransfer(msg.sender, balance);
         }
     }
 
     function setMembershipNFT(address _newAddr) external onlyOwner {
         membershipNFT = MembershipNFT(_newAddr);
-    }    
+    }
 }
