@@ -1,16 +1,15 @@
-require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-etherscan");
-require("hardhat-gas-reporter");
-require("hardhat-tracer");
-require("solidity-coverage");
+require('@nomiclabs/hardhat-waffle');
+require('@nomiclabs/hardhat-etherscan');
+require('hardhat-gas-reporter');
+require('hardhat-tracer');
 
-const { resolve } = require("path");
-const { config: dotenvConfig } = require("dotenv");
+const { resolve } = require('path');
+const { config: dotenvConfig } = require('dotenv');
 
-dotenvConfig({ path: resolve(__dirname, "./.env") });
+dotenvConfig({ path: resolve(__dirname, './.env') });
 
 module.exports = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: 'hardhat',
   networks: {
     hardhat: {},
     rinkeby: {
@@ -31,7 +30,7 @@ module.exports = {
     },
   },
   gasReporter: {
-    currency: "USD",
+    currency: 'USD',
     gasPrice: 100,
   },
   etherscan: {
@@ -44,27 +43,27 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.0",
+        version: '0.8.0',
         settings: {
           optimizer: {
             enabled: true,
             runs: 10000,
           },
           outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
+            '*': {
+              '*': ['storageLayout'],
             },
           },
         },
-        version: "0.8.4",
+        version: '0.8.4',
         settings: {
           optimizer: {
             enabled: true,
             runs: 10000,
           },
           outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
+            '*': {
+              '*': ['storageLayout'],
             },
           },
         },
@@ -72,10 +71,10 @@ module.exports = {
     ],
   },
   paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts",
+    sources: './contracts',
+    tests: './test',
+    cache: './cache',
+    artifacts: './artifacts',
   },
   mocha: {
     timeout: 40000,
