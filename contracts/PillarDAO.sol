@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "./IPillarDAO.sol";
 import "./MembershipNFT.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract PillarDAO is IPillarDAO, Ownable {
-    using SafeMath for uint;
+contract PillarDAO is IPillarDAO, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    address private stakingToken;
-    uint private constant stakingTerm = 52 weeks;
-    uint private stakeAmount;
+    address private immutable stakingToken;
+    uint256 private immutable stakingTerm = 52 weeks;
+    uint256 private immutable stakeAmount;
     MembershipNFT private membershipNFT;
 
     struct Deposit {
@@ -26,7 +25,7 @@ contract PillarDAO is IPillarDAO, Ownable {
 
     constructor(
         address _stakingToken,
-        uint _stakeAmount,
+        uint256 _stakeAmount,
         address _membershipNft
     ) {
         require(
@@ -39,7 +38,7 @@ contract PillarDAO is IPillarDAO, Ownable {
         membershipNFT = MembershipNFT(_membershipNft);
     }
 
-    function deposit(uint _amount) external override {
+    function deposit(uint256 _amount) external override nonReentrant {
         require(_amount == stakeAmount, "PillarDAO:: invalid staked amount");
         require(
             memberships[msg.sender] == 0,
@@ -62,13 +61,13 @@ contract PillarDAO is IPillarDAO, Ownable {
         });
     }
 
-    function withdraw() external override {
+    function withdraw() external override nonReentrant {
         require(
             balances[msg.sender].depositAmount > 0,
             "PillarDAO:: insufficient balance to withdraw"
         );
         require(
-            (block.timestamp - balances[msg.sender].depositTime) > 52 weeks,
+            (block.timestamp - balances[msg.sender].depositTime) > stakingTerm,
             "PillarDAO:: too early to withdraw"
         );
         require(
@@ -94,7 +93,7 @@ contract PillarDAO is IPillarDAO, Ownable {
     }
 
     function canUnstake(address _to) external view returns (bool) {
-        if ((block.timestamp - balances[_to].depositTime) >= 52 weeks) {
+        if ((block.timestamp - balances[_to].depositTime) >= stakingTerm) {
             return true;
         }
         return false;
@@ -106,11 +105,6 @@ contract PillarDAO is IPillarDAO, Ownable {
 
     function setMembershipURI(string memory _baseURI) external onlyOwner {
         membershipNFT.setBaseURI(_baseURI);
-    }
-
-    function withdrawToOwner() external onlyOwner {
-        uint256 contractBalance = address(this).balance;
-        payable(msg.sender).transfer(contractBalance);
     }
 
     function withdrawTokenToOwner(address _token) external onlyOwner {

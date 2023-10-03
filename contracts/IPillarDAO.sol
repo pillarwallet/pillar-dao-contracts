@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 interface IPillarDAO {
     event DepositEvent(
         address indexed depositAddress,
-        uint indexed membershipId
+        uint256 indexed membershipId
     );
 
     event WithdrawEvent(
         address indexed withdrawAddress,
-        uint indexed membershipId
+        uint256 indexed membershipId
     );
 
-    function deposit(uint amount) external;
+    function deposit(uint256 _amount) external;
 
     function withdraw() external;
 }

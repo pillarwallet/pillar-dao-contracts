@@ -1,8 +1,7 @@
-const { ethers, waffle } = require('hardhat');
+const { ethers } = require('hardhat');
 const { expect } = require('chai');
-const {
-  collapseTextChangeRangesAcrossMultipleVersions,
-} = require('typescript');
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 describe('MembershipNFT', () => {
   let membershipNFT, owner, addr1, addr2, addr3, vault;
@@ -117,5 +116,37 @@ describe('MembershipNFT', () => {
     const memId4 = await mint4.wait();
     expect(memId4.events[0].args.tokenId).to.equal(5);
     expect(await membershipNFT.balanceOf(addr1.address)).to.equal(2);
+  });
+
+  describe('#withdrawTokenToVault', async () => {
+    it('should withdraw balance to vault', async () => {
+      const TestToken = await ethers.getContractFactory('TestToken');
+      const testToken = await TestToken.deploy();
+      await testToken.deployed();
+      const ownerStartBalance = await testToken.balanceOf(owner.address);
+      await testToken.approve(owner.address, ethers.utils.parseEther('100'));
+      await testToken.transferFrom(
+        owner.address,
+        membershipNFT.address,
+        ethers.utils.parseEther('100')
+      );
+      const ownerPreBalance = await testToken.balanceOf(owner.address);
+      const nftPreBalance = await testToken.balanceOf(membershipNFT.address);
+      await membershipNFT.withdrawTokenToVault(testToken.address);
+      const ownerPostBalance = await testToken.balanceOf(owner.address);
+      const nftPostBalance = await testToken.balanceOf(membershipNFT.address);
+      expect(ownerStartBalance).gt(ownerPreBalance);
+      expect(ownerPostBalance).gt(ownerPreBalance);
+      expect(ownerStartBalance).eq(ownerPostBalance);
+      expect(nftPreBalance).eq(ethers.utils.parseEther('100'));
+      expect(nftPreBalance).gt(nftPostBalance);
+      expect(nftPostBalance).eq(0);
+    });
+  });
+
+  describe('#getVaultAddress', async () => {
+    it('should return vault address', async () => {
+      expect(await membershipNFT.getVaultAddress()).to.eq(owner.address);
+    });
   });
 });

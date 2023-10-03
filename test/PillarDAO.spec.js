@@ -109,9 +109,7 @@ describe('PillarDAO', () => {
 
   it('configuration functions can be called only by owner', async () => {
     const txn1 = pillarDAO.connect(addr2).setMembershipURI('test');
-    const txn2 = pillarDAO.connect(addr2).withdrawToOwner();
     await expect(txn1).to.revertedWith('Ownable: caller is not the owner');
-    await expect(txn2).to.revertedWith('Ownable: caller is not the owner');
   });
 
   it('withdraw() after 52 weeks', async () => {
@@ -125,5 +123,33 @@ describe('PillarDAO', () => {
     const membershipId = await pillarDAO.membershipId(owner.address);
     expect(ret.events.length).to.gte(0);
     expect(membershipId).to.equal(0);
+  });
+
+  describe('#withdrawTokenToOwner', async () => {
+    it('should withdraw non-staking token contract balance to the owner', async () => {
+      const TestToken = await ethers.getContractFactory('TestToken');
+      const testToken = await TestToken.deploy();
+      await testToken.deployed();
+      const ownerStartBalance = await testToken.balanceOf(owner.address);
+      await testToken.approve(owner.address, ethers.utils.parseEther('100'));
+      await testToken
+        .connect(owner)
+        .transferFrom(
+          owner.address,
+          pillarDAO.address,
+          ethers.utils.parseEther('1')
+        );
+      const ownerPreBalance = await testToken.balanceOf(owner.address);
+      const daoPreBalance = await testToken.balanceOf(pillarDAO.address);
+      await pillarDAO.withdrawTokenToOwner(testToken.address);
+      const ownerPostBalance = await testToken.balanceOf(owner.address);
+      const daoPostBalance = await testToken.balanceOf(pillarDAO.address);
+      expect(ownerStartBalance).gt(ownerPreBalance);
+      expect(ownerPostBalance).gt(ownerPreBalance);
+      expect(ownerStartBalance).eq(ownerPostBalance);
+      expect(daoPreBalance).eq(ethers.utils.parseEther('1'));
+      expect(daoPreBalance).gt(daoPostBalance);
+      expect(daoPostBalance).eq(0);
+    });
   });
 });
