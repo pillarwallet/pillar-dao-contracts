@@ -1,6 +1,8 @@
 require('@nomiclabs/hardhat-waffle');
 require('@nomiclabs/hardhat-etherscan');
 require('hardhat-gas-reporter');
+require('hardhat-tracer');
+require('solidity-coverage');
 
 const { resolve } = require('path');
 const { config: dotenvConfig } = require('dotenv');
@@ -36,18 +38,34 @@ module.exports = {
     },
   },
   solidity: {
-    version: '0.8.0',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 10000,
-      },
-      outputSelection: {
-        '*': {
-          '*': ['storageLayout'],
+    compilers: [
+      {
+        version: '0.8.0',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10000,
+          },
+          outputSelection: {
+            '*': {
+              '*': ['storageLayout'],
+            },
+          },
+        },
+        version: '0.8.4',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10000,
+          },
+          outputSelection: {
+            '*': {
+              '*': ['storageLayout'],
+            },
+          },
         },
       },
-    },
+    ],
   },
   paths: {
     sources: './contracts',
