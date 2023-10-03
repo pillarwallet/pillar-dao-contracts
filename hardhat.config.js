@@ -1,70 +1,66 @@
-require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-etherscan");
-require("hardhat-gas-reporter");
-require("hardhat-tracer");
-require("solidity-coverage");
+require('@nomiclabs/hardhat-waffle');
+require('@nomiclabs/hardhat-etherscan');
+require('hardhat-gas-reporter');
+require('hardhat-tracer');
+require('solidity-coverage');
 
-const { resolve } = require("path");
-const { config: dotenvConfig } = require("dotenv");
+const { resolve } = require('path');
+const { config: dotenvConfig } = require('dotenv');
 
-dotenvConfig({ path: resolve(__dirname, "./.env") });
+dotenvConfig({ path: resolve(__dirname, './.env') });
 
 module.exports = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: 'hardhat',
   networks: {
     hardhat: {},
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
-    },
     mumbai: {
-      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_MUMBAI_API_KEY}`,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
     },
     polygon: {
-      url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_POLYGON_API_KEY}`,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
     },
     goerli: {
-      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_GOELRI_API_KEY}`,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
     },
   },
   gasReporter: {
-    currency: "USD",
+    currency: 'USD',
     gasPrice: 100,
   },
   etherscan: {
     apiKey: {
-      rinkeby: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYSCAN_API_KEY,
       goerli: process.env.ETHERSCAN_API_KEY,
+      polygonMumbai: process.env.POLYSCAN_API_KEY,
     },
   },
   solidity: {
     compilers: [
       {
-        version: "0.8.0",
+        version: '0.8.0',
         settings: {
           optimizer: {
             enabled: true,
             runs: 10000,
           },
           outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
+            '*': {
+              '*': ['storageLayout'],
             },
           },
         },
-        version: "0.8.4",
+        version: '0.8.4',
         settings: {
           optimizer: {
             enabled: true,
             runs: 10000,
           },
           outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
+            '*': {
+              '*': ['storageLayout'],
             },
           },
         },
@@ -72,10 +68,10 @@ module.exports = {
     ],
   },
   paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts",
+    sources: './contracts',
+    tests: './test',
+    cache: './cache',
+    artifacts: './artifacts',
   },
   mocha: {
     timeout: 40000,

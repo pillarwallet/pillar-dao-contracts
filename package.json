@@ -1,7 +1,6 @@
 {
   "name": "pillar-dao-contracts",
   "devDependencies": {
-    "@nomicfoundation/hardhat-network-helpers": "1.0.6",
     "@nomiclabs/hardhat-ethers": "2.0.4",
     "@nomiclabs/hardhat-waffle": "2.0.2",
     "@openzeppelin/test-helpers": "0.5.16",
