@@ -17,7 +17,7 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     uint256 private _tokenIds = 1;
 
     modifier onlyVault() {
-        require(msg.sender == vaultAddress, "Not the vault");
+        require(msg.sender == vaultAddress, "MembershipNFT:: not the vault");
         _;
     }
 
@@ -38,12 +38,9 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
-    function mint(address _to)
-        external
-        onlyVault
-        nonReentrant
-        returns (uint256)
-    {
+    function mint(
+        address _to
+    ) external onlyVault nonReentrant returns (uint256) {
         uint256 mintIndex = _tokenIds;
         _safeMint(_to, mintIndex);
         ++_tokenIds;
@@ -66,14 +63,17 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     }
 
     function withdrawToVault() external onlyVault {
-        require(vaultAddress != address(0), "Vault address not set");
+        require(
+            vaultAddress != address(0),
+            "MembershipNFT:: vault address not set"
+        );
 
         uint256 contractBalance = address(this).balance;
         payable(vaultAddress).transfer(contractBalance);
     }
 
     function withdrawTokenToVault(address _token) external onlyVault {
-        require(_token != address(0), "Invalid token address");
+        require(_token != address(0), "MembershipNFT:: invalid token address");
 
         IERC20 token = IERC20(_token);
         uint256 balance = token.balanceOf(address(this));

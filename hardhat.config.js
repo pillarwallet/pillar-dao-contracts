@@ -2,6 +2,7 @@ require('@nomiclabs/hardhat-waffle');
 require('@nomiclabs/hardhat-etherscan');
 require('hardhat-gas-reporter');
 require('hardhat-tracer');
+require('solidity-coverage');
 
 const { resolve } = require('path');
 const { config: dotenvConfig } = require('dotenv');
@@ -12,20 +13,16 @@ module.exports = {
   defaultNetwork: 'hardhat',
   networks: {
     hardhat: {},
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
-    },
     mumbai: {
-      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_MUMBAI_API_KEY}`,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
     },
     polygon: {
-      url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_POLYGON_API_KEY}`,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
     },
     goerli: {
-      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_GOELRI_API_KEY}`,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
     },
   },
@@ -35,9 +32,9 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      rinkeby: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYSCAN_API_KEY,
       goerli: process.env.ETHERSCAN_API_KEY,
+      polygonMumbai: process.env.POLYSCAN_API_KEY,
     },
   },
   solidity: {
