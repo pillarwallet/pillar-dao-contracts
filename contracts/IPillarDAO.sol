@@ -1,12 +1,13 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 interface IPillarDAO {
-    event DepositEvent (
+    event DepositEvent(
         address indexed depositAddress,
         uint indexed membershipId
     );
 
-    event WithdrawEvent (
+    event WithdrawEvent(
         address indexed withdrawAddress,
         uint indexed membershipId
     );

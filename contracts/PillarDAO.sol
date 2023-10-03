@@ -1,8 +1,8 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./IPillarDAO.sol";
 import "./MembershipNFT.sol";
-
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -28,7 +28,7 @@ contract PillarDAO is IPillarDAO, Ownable {
         address _stakingToken,
         uint _stakeAmount,
         address _membershipNft
-    ) public {
+    ) {
         require(
             _stakingToken != address(0),
             "PillarDAO:: invalid staking contract"
