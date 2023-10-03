@@ -1,9 +1,10 @@
-const { ethers } = require('hardhat');
+const { ethers, network } = require('hardhat');
 const { expect } = require('chai');
 const { expectRevert } = require('@openzeppelin/test-helpers');
 const contract = require('../artifacts/contracts/PillarStakedToken.sol/PillarStakedToken.json');
 
-const elevenDays = 11 * 24 * 60 * 60;
+const oneDay = 60 * 60 * 24;
+const oneMonth = 4 * 7 * 24 * 60 * 60;
 const oneYearOneWeek = 53 * 7 * 24 * 60 * 60;
 
 describe('PillarStakingContract', () => {
@@ -172,7 +173,7 @@ describe('PillarStakingContract', () => {
       expect(
         await plrStaking.getStakedAmountForAccount(addr1.address)
       ).to.equal(stakeAmount);
-      await network.provider.send('evm_increaseTime', [elevenDays]);
+      await network.provider.send('evm_increaseTime', [oneMonth]);
       await plrStaking.connect(owner).setStateStaked();
       await network.provider.send('evm_increaseTime', [oneYearOneWeek]);
       await plrStaking.connect(owner).setStateReadyForUnstake();
@@ -200,7 +201,7 @@ describe('PillarStakingContract', () => {
       expect(
         await plrStaking.getStakedAmountForAccount(addr1.address)
       ).to.equal(stakeAmount);
-      await network.provider.send('evm_increaseTime', [elevenDays]);
+      await network.provider.send('evm_increaseTime', [oneMonth]);
       await plrStaking.connect(owner).setStateStaked();
       await network.provider.send('evm_increaseTime', [oneYearOneWeek]);
       await plrStaking.connect(owner).setStateReadyForUnstake();
@@ -593,7 +594,7 @@ describe('PillarStakingContract', () => {
       await expect(plrStaking.connect(owner).setStateStakeable())
         .to.emit(plrStaking, 'ContractStateUpdated')
         .withArgs(1);
-      await network.provider.send('evm_increaseTime', [elevenDays]);
+      await network.provider.send('evm_increaseTime', [oneMonth]);
       await expect(plrStaking.connect(owner).setStateStaked())
         .to.emit(plrStaking, 'ContractStateUpdated')
         .withArgs(2);
@@ -609,7 +610,7 @@ describe('PillarStakingContract', () => {
       const stake = '10000000000000000000000'; // 10,000 PLR
       await plrStaking.connect(owner).setStateStakeable();
       await plrStaking.connect(addr1).stake(stake);
-      await network.provider.send('evm_increaseTime', [elevenDays]);
+      await network.provider.send('evm_increaseTime', [oneMonth]);
       await plrStaking.connect(owner).setStateStaked();
       await expectRevert(
         plrStaking.connect(addr1).stake(stake),
@@ -621,7 +622,7 @@ describe('PillarStakingContract', () => {
       const stake = '10000000000000000000000'; // 10,000 PLR
       await plrStaking.connect(owner).setStateStakeable();
       await plrStaking.connect(addr1).stake(stake);
-      await network.provider.send('evm_increaseTime', [elevenDays]);
+      await network.provider.send('evm_increaseTime', [oneMonth]);
       await expectRevert(
         plrStaking.connect(addr1).stake(stake),
         'StakingPeriodPassed()'
@@ -631,7 +632,7 @@ describe('PillarStakingContract', () => {
     it('stake(): Error checks - should not allow users to stake when the staking period has ended', async () => {
       const stake = '10000000000000000000000'; // 10,000 PLR
       await plrStaking.connect(owner).setStateStakeable();
-      await network.provider.send('evm_increaseTime', [elevenDays]);
+      await network.provider.send('evm_increaseTime', [oneMonth + oneDay]);
       await expectRevert(
         plrStaking.connect(addr1).stake(stake),
         'StakingPeriodPassed()'

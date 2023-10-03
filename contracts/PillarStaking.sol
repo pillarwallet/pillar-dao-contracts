@@ -21,7 +21,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     mapping(address => Stakeholder) public stakeholderData;
 
     uint256 private constant BPS = 10000;
-    uint256 private constant STAKING_PERIOD = 10 days;
+    uint256 private constant STAKING_PERIOD = 4 weeks;
     uint256 private constant STAKED_PERIOD = 52 weeks;
     uint256 public minStake = 10000e18;
     uint256 public maxStake = 250000e18;
@@ -171,19 +171,15 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         return stakeholderList;
     }
 
-    function getStakedAmountForAccount(address account)
-        public
-        view
-        returns (uint256 amount)
-    {
+    function getStakedAmountForAccount(
+        address account
+    ) public view returns (uint256 amount) {
         return stakeholderData[account].stakedAmount;
     }
 
-    function getRewardAmountForAccount(address account)
-        public
-        view
-        returns (uint256 amount)
-    {
+    function getRewardAmountForAccount(
+        address account
+    ) public view returns (uint256 amount) {
         return stakeholderData[account].rewardAmount;
     }
 
@@ -196,11 +192,9 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         emit RewardsDeposited(_amount);
     }
 
-    function updateMinStakeLimit(uint256 _amount)
-        external
-        onlyOwner
-        whenStakeable
-    {
+    function updateMinStakeLimit(
+        uint256 _amount
+    ) external onlyOwner whenStakeable {
         if (maxStake < _amount)
             revert ProposedMinStakeTooHigh({
                 currentMax: maxStake,
@@ -211,11 +205,9 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         emit MinStakeAmountUpdated(_amount);
     }
 
-    function updateMaxStakeLimit(uint256 _amount)
-        external
-        onlyOwner
-        whenStakeable
-    {
+    function updateMaxStakeLimit(
+        uint256 _amount
+    ) external onlyOwner whenStakeable {
         if (minStake > _amount)
             revert ProposedMaxStakeTooLow({
                 currentMin: minStake,
