@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
+
     string public baseURI;
-
     address private vaultAddress = address(0);
-
     uint256 private _tokenIds = 1;
 
     modifier onlyVault() {
@@ -22,21 +19,20 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     }
 
     event Minted(address indexed owner, uint256 indexed tokenId);
-
     event Burned(address indexed owner, uint256 indexed tokenId);
+    event UpdatedVaultAddress(
+        address indexed oldVaultAddress,
+        address indexed newVaultAddress
+    );
 
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {
+    constructor(
+        string memory _name,
+        string memory _symbol
+    ) ERC721(_name, _symbol) {
         vaultAddress = msg.sender;
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual override onlyVault {
-        //disable transfers
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
+    // External/Public
 
     function mint(
         address _to
@@ -54,40 +50,44 @@ contract MembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         emit Burned(owner, _tokenId);
     }
 
-    function _baseURI() internal view virtual override returns (string memory) {
-        return baseURI;
-    }
-
     function setBaseURI(string memory _newBaseURI) external onlyVault {
         baseURI = _newBaseURI;
     }
 
-    function withdrawToVault() external onlyVault {
-        require(
-            vaultAddress != address(0),
-            "MembershipNFT:: vault address not set"
-        );
-
-        uint256 contractBalance = address(this).balance;
-        payable(vaultAddress).transfer(contractBalance);
-    }
-
     function withdrawTokenToVault(address _token) external onlyVault {
         require(_token != address(0), "MembershipNFT:: invalid token address");
-
         IERC20 token = IERC20(_token);
         uint256 balance = token.balanceOf(address(this));
-
         if (balance > 0) {
             token.safeTransfer(vaultAddress, balance);
         }
     }
 
     function setVaultAddress(address _newVaultAddress) external onlyOwner {
+        require(
+            _newVaultAddress != address(0),
+            "MembershipNFT:: invalid vault address"
+        );
+        emit UpdatedVaultAddress(vaultAddress, _newVaultAddress);
         vaultAddress = _newVaultAddress;
     }
 
     function getVaultAddress() external view returns (address) {
         return vaultAddress;
+    }
+
+    // Internal
+
+    function _beforeTokenTransfer(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) internal virtual override onlyVault {
+        //disable transfers
+        super._beforeTokenTransfer(_from, _to, _tokenId);
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return baseURI;
     }
 }
