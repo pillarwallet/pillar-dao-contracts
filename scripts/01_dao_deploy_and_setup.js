@@ -27,23 +27,13 @@ async function main() {
   // const stakingToken = pillarToken.address;
 
   // Deploy Membership NFT contract
-  const name = 'Pillar DAO NFT';
-  const symbol = 'PLR DAO';
+  const name = 'Pillar DAA';
+  const symbol = 'DAA';
 
   const MembershipNFT = await ethers.getContractFactory('MembershipNFT');
   const membershipNFT = await MembershipNFT.deploy(name, symbol);
   await membershipNFT.deployed();
   console.log('MembershipNFT address:', membershipNFT.address);
-
-  // Wait for 5 block transactions to ensure deployment before verifying
-  await membershipNFT.deployTransaction.wait(5);
-
-  // Verify contract on Etherscan
-  await hre.run('verify:verify', {
-    address: membershipNFT.address,
-    contract: 'contracts/MembershipNFT.sol:MembershipNFT',
-    constructorArguments: [name, symbol],
-  });
 
   const stakingAmount = ethers.utils.parseEther('10000');
   const values = [stakingToken, stakingAmount, membershipNFT.address];
@@ -58,8 +48,29 @@ async function main() {
     ...values
   );
 
+  // Set vault address to DAO contract
+  await membershipNFT
+    .connect(deployer)
+    .setVaultAddress(pillarDaoContract.address);
+  console.log(`Vault Address set to: ${pillarDaoContract.address}`);
+
+  // // Set MembershipNFT baseURI (has to be from vault address)
+  // await pillarDaoContract.connect(deployer).setMembershipURI(NFT_IMAGE_LINK);
+
+  // // Sanity check on MembershipNFT to check baseURI
+  // const baseURI = await membershipNFT.baseURI();
+  // console.log(`baseURI set to: ${baseURI}`);
+
+  console.log('Starting verification...');
   // Wait for 5 block transactions to ensure deployment before verifying
-  await pillarDaoContract.deployTransaction.wait(5);
+  await pillarDaoContract.deployTransaction.wait(15);
+
+  // Verify contract on Etherscan
+  await hre.run('verify:verify', {
+    address: membershipNFT.address,
+    contract: 'contracts/MembershipNFT.sol:MembershipNFT',
+    constructorArguments: [name, symbol],
+  });
 
   // Verify contract on Etherscan
   await hre.run('verify:verify', {
@@ -68,18 +79,7 @@ async function main() {
     constructorArguments: [...values],
   });
 
-  // Set vault address to DAO contract
-  await membershipNFT
-    .connect(deployer)
-    .setVaultAddress(pillarDaoContract.address);
-  console.log(`Vault Address set to: ${pillarDaoContract.address}`);
-
-  // Set MembershipNFT baseURI (has to be from vault address)
-  await pillarDaoContract.connect(deployer).setMembershipURI(NFT_IMAGE_LINK);
-
-  // Sanity check on MembershipNFT to check baseURI
-  const baseURI = await membershipNFT.baseURI();
-  console.log(`baseURI set to: ${baseURI}`);
+  console.log('Completed verification...');
 }
 
 main()
