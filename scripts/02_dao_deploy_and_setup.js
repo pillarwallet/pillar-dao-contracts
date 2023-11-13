@@ -27,16 +27,21 @@ async function main() {
   // const stakingToken = pillarToken.address;
 
   // Deploy Membership NFT contract
-  const name = 'Pillar DAA';
-  const symbol = 'DAA';
+  // const name = 'Pillar DAA';
+  // const symbol = 'DAA';
 
-  const MembershipNFT = await ethers.getContractFactory('MembershipNFT');
-  const membershipNFT = await MembershipNFT.deploy(name, symbol);
-  await membershipNFT.deployed();
-  console.log('MembershipNFT address:', membershipNFT.address);
+  // const MembershipNFT = await ethers.getContractFactory('MembershipNFT');
+  // const membershipNFT = await MembershipNFT.deploy(name, symbol);
+  // await membershipNFT.deployed();
+  // console.log('MembershipNFT address:', membershipNFT.address);
 
   const stakingAmount = ethers.utils.parseEther('10000');
-  const values = [stakingToken, stakingAmount, membershipNFT.address];
+  // const values = [stakingToken, stakingAmount, membershipNFT.address];
+  const values = [
+    stakingToken,
+    stakingAmount,
+    '0xdf092214989eD7f73bAEf99D651E5e721e0e7F11',
+  ];
 
   const PillarDAOFactory = await ethers.getContractFactory('PillarDAO');
   const pillarDaoContract = await PillarDAOFactory.deploy(...values);
