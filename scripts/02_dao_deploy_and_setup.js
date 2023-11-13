@@ -3,45 +3,45 @@ const hre = require('hardhat');
 async function main() {
   const NFT_IMAGE_LINK = ''; // Set NFT image link
   const [deployer] = await ethers.getSigners();
-  const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // PLR Token Polygon
+  // const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // PLR Token Polygon
 
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
 
-  // // Deploy Pillar Token (ONLY FOR TESTING!)
-  // const PillarToken = await ethers.getContractFactory('TestToken');
-  // const pillarToken = await PillarToken.deploy();
-  // await pillarToken.deployed();
-  // console.log('PillarToken address:', pillarToken.address);
+  // Deploy Pillar Token (ONLY FOR TESTING!)
+  const PillarToken = await ethers.getContractFactory('DummyPillarToken');
+  const pillarToken = await PillarToken.deploy();
+  await pillarToken.deployed();
+  console.log('PillarToken address:', pillarToken.address);
 
-  // // Wait for 5 block transactions to ensure deployment before verifying
-  // await pillarToken.deployTransaction.wait(10);
+  // Wait for 5 block transactions to ensure deployment before verifying
+  await pillarToken.deployTransaction.wait(10);
 
-  // // Verify contract on Etherscan
-  // await hre.run('verify:verify', {
-  //   address: pillarToken.address,
-  //   contract: 'contracts/helpers/TestToken.sol:TestToken',
-  // });
+  // Verify contract on Etherscan
+  await hre.run('verify:verify', {
+    address: pillarToken.address,
+    contract: 'contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken',
+  });
 
   // Deploy PillarDAO contract
-  // const stakingToken = pillarToken.address;
+  const stakingToken = pillarToken.address;
 
   // Deploy Membership NFT contract
-  // const name = 'Pillar DAA';
-  // const symbol = 'DAA';
+  const name = 'Pillar DAA';
+  const symbol = 'DAA';
 
-  // const MembershipNFT = await ethers.getContractFactory('MembershipNFT');
-  // const membershipNFT = await MembershipNFT.deploy(name, symbol);
-  // await membershipNFT.deployed();
-  // console.log('MembershipNFT address:', membershipNFT.address);
+  const MembershipNFT = await ethers.getContractFactory('MembershipNFT');
+  const membershipNFT = await MembershipNFT.deploy(name, symbol);
+  await membershipNFT.deployed();
+  console.log('MembershipNFT address:', membershipNFT.address);
 
   const stakingAmount = ethers.utils.parseEther('10000');
-  // const values = [stakingToken, stakingAmount, membershipNFT.address];
-  const values = [
-    stakingToken,
-    stakingAmount,
-    '0xdf092214989eD7f73bAEf99D651E5e721e0e7F11',
-  ];
+  const values = [stakingToken, stakingAmount, membershipNFT.address];
+  // const values = [
+  //   stakingToken,
+  //   stakingAmount,
+  //   '0xdf092214989eD7f73bAEf99D651E5e721e0e7F11',
+  // ];
 
   const PillarDAOFactory = await ethers.getContractFactory('PillarDAO');
   const pillarDaoContract = await PillarDAOFactory.deploy(...values);
