@@ -8,46 +8,36 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
 
-  // // Deploy Pillar Token (ONLY FOR TESTING!)
-  // const PillarToken = await ethers.getContractFactory('TestToken');
-  // const pillarToken = await PillarToken.deploy();
-  // await pillarToken.deployed();
-  // console.log('PillarToken address:', pillarToken.address);
+  // Deploy Pillar Token (ONLY FOR TESTING!)
+  const PillarToken = await ethers.getContractFactory('DummyPillarToken');
+  const pillarToken = await PillarToken.deploy();
+  await pillarToken.deployed();
+  console.log('PillarToken address:', pillarToken.address);
 
-  // // Wait for 5 block transactions to ensure deployment before verifying
-  // await pillarToken.deployTransaction.wait(10);
+  // Wait for 10 block transactions to ensure deployment before verifying
+  await pillarToken.deployTransaction.wait(10);
 
-  // // Verify contract on Etherscan
-  // await hre.run('verify:verify', {
-  //   address: pillarToken.address,
-  //   contract: 'contracts/helpers/TestToken.sol:TestToken',
-  // });
+  // Verify contract on Etherscan
+  await hre.run('verify:verify', {
+    address: pillarToken.address,
+    contract: 'contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken',
+  });
 
-  // Deploy PillarDAO contract
-  // const stakingToken = pillarToken.address;
+  // Set values for MembershipNFT deployment
+  const name = 'Pillar DAA';
+  const symbol = 'DAA';
 
-  // Deploy Membership NFT contract
-  const name = 'Pillar DAO NFT';
-  const symbol = 'PLR DAO';
-
+  // MembershipNFT deployment
   const MembershipNFT = await ethers.getContractFactory('MembershipNFT');
   const membershipNFT = await MembershipNFT.deploy(name, symbol);
   await membershipNFT.deployed();
   console.log('MembershipNFT address:', membershipNFT.address);
 
-  // Wait for 5 block transactions to ensure deployment before verifying
-  await membershipNFT.deployTransaction.wait(5);
-
-  // Verify contract on Etherscan
-  await hre.run('verify:verify', {
-    address: membershipNFT.address,
-    contract: 'contracts/MembershipNFT.sol:MembershipNFT',
-    constructorArguments: [name, symbol],
-  });
-
+  // Set values for PillarDAO deployment
   const stakingAmount = ethers.utils.parseEther('10000');
   const values = [stakingToken, stakingAmount, membershipNFT.address];
 
+  // PillarDAO deployment
   const PillarDAOFactory = await ethers.getContractFactory('PillarDAO');
   const pillarDaoContract = await PillarDAOFactory.deploy(...values);
   await pillarDaoContract.deployed();
@@ -58,28 +48,39 @@ async function main() {
     ...values
   );
 
-  // Wait for 5 block transactions to ensure deployment before verifying
-  await pillarDaoContract.deployTransaction.wait(5);
-
-  // Verify contract on Etherscan
-  await hre.run('verify:verify', {
-    address: pillarDaoContract.address,
-    contract: 'contracts/PillarDAO.sol:PillarDAO',
-    constructorArguments: [...values],
-  });
-
   // Set vault address to DAO contract
   await membershipNFT
     .connect(deployer)
     .setVaultAddress(pillarDaoContract.address);
   console.log(`Vault Address set to: ${pillarDaoContract.address}`);
 
-  // Set MembershipNFT baseURI (has to be from vault address)
-  await pillarDaoContract.connect(deployer).setMembershipURI(NFT_IMAGE_LINK);
+  // // Set MembershipNFT baseURI (has to be from vault address)
+  // await pillarDaoContract.connect(deployer).setMembershipURI(NFT_IMAGE_LINK);
 
-  // Sanity check on MembershipNFT to check baseURI
-  const baseURI = await membershipNFT.baseURI();
-  console.log(`baseURI set to: ${baseURI}`);
+  // // Sanity check on MembershipNFT to check baseURI
+  // const baseURI = await membershipNFT.baseURI();
+  // console.log(`baseURI set to: ${baseURI}`);
+
+  console.log('Starting verification...');
+
+  // Wait for 5 block transactions to ensure deployment before verifying
+  await pillarDaoContract.deployTransaction.wait(15);
+
+  // Verify MembershipNFT contract on Etherscan
+  await hre.run('verify:verify', {
+    address: membershipNFT.address,
+    contract: 'contracts/MembershipNFT.sol:MembershipNFT',
+    constructorArguments: [name, symbol],
+  });
+
+  // Verify PillarDAO contract on Etherscan
+  await hre.run('verify:verify', {
+    address: pillarDaoContract.address,
+    contract: 'contracts/PillarDAO.sol:PillarDAO',
+    constructorArguments: [...values],
+  });
+
+  console.log('Completed verification...');
 }
 
 main()
