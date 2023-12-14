@@ -1,5 +1,8 @@
 const { ethers, run } = require('hardhat');
 
+const ONE_DAY = 60 * 60 * 24;
+const ONE_WEEK = 60 * 60 * 24 * 7;
+
 const main = async () => {
   await run('compile');
 
@@ -57,9 +60,21 @@ const main = async () => {
 
   const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // add staking token address here (PLR - Polygon)
   const rewardToken = '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619'; // add reward token address here (wETH - Polygon)
+  const minUserStake = 0;
+  const maxUserStake = 0;
   const maxTotalStake = 0; // will default to 7.2m PLR
+  const stakeablePeriod = ONE_DAY;
+  const tokenLockupDuration = ONE_WEEK;
 
-  const values = [stakingToken, rewardToken, maxTotalStake];
+  const values = [
+    stakingToken,
+    rewardToken,
+    minUserStake,
+    maxUserStake,
+    maxTotalStake,
+    stakeablePeriod,
+    tokenLockupDuration,
+  ];
 
   // Deploy Pillar Staking contract
   const PillarStaking = await ethers.getContractFactory('PillarStaking');
@@ -79,7 +94,15 @@ const main = async () => {
   await hre.run('verify:verify', {
     address: pillarStaking.address,
     contract: 'contracts/PillarStaking.sol:PillarStaking',
-    constructorArguments: [stakingToken, rewardToken, maxTotalStake],
+    constructorArguments: [
+      stakingToken,
+      rewardToken,
+      minUserStake,
+      maxUserStake,
+      maxTotalStake,
+      stakeablePeriod,
+      tokenLockupDuration,
+    ],
   });
 };
 
