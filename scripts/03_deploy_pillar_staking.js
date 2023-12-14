@@ -9,14 +9,14 @@ const main = async () => {
 
   // /* FOR TESTING PURPOSES */
 
-  // // Deploy DummyPillarToken contract
-  // const DummyPillar = await ethers.getContractFactory("DummyPillarToken");
+  // Deploy DummyPillarToken contract
+  // const DummyPillar = await ethers.getContractFactory('DummyPillarToken');
   // const dummyPillar = await DummyPillar.deploy();
   // await dummyPillar.deployed();
-  // const dummyPillarAddress = await dummyPillar.address;
+  // const dummyPillarTokenAddress = await dummyPillar.address;
 
   // console.log(
-  //   "DummyPillarToken - deployed to address with values: ",
+  //   'DummyPillarToken - deployed to address with values: ',
   //   dummyPillar.address
   // );
 
@@ -24,20 +24,20 @@ const main = async () => {
   // await dummyPillar.deployTransaction.wait(5);
 
   // // Verify contract on Etherscan
-  // await hre.run("verify:verify", {
+  // await hre.run('verify:verify', {
   //   address: dummyPillar.address,
-  //   contract: "contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken",
+  //   contract: 'contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken',
   //   constructorArguments: [],
   // });
 
   // // Deploy DummyWETHToken contract
-  // const DummyWETH = await ethers.getContractFactory("DummyWETHToken");
+  // const DummyWETH = await ethers.getContractFactory('DummyWETHToken');
   // const dummyWETH = await DummyWETH.deploy();
   // await dummyWETH.deployed();
-  // const dummyWETHAddress = await dummyWETH.address;
+  // const dummyWETHTokenAddress = await dummyWETH.address;
 
   // console.log(
-  //   "DummyWETHToken - deployed to address with values: ",
+  //   'DummyWETHToken - deployed to address with values: ',
   //   dummyWETH.address
   // );
 
@@ -45,9 +45,9 @@ const main = async () => {
   // await dummyWETH.deployTransaction.wait(5);
 
   // // Verify contract on Etherscan
-  // await hre.run("verify:verify", {
+  // await hre.run('verify:verify', {
   //   address: dummyWETH.address,
-  //   contract: "contracts/testing_utils/DummyWETHToken.sol:DummyWETHToken",
+  //   contract: 'contracts/testing_utils/DummyWETHToken.sol:DummyWETHToken',
   //   constructorArguments: [],
   // });
 
@@ -55,8 +55,8 @@ const main = async () => {
   ///////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////
 
-  const stakingToken = '0xb7c5A2edC0c2e13104f0eDc5F237Df766ff134A8'; // add staking token address here (dPLR - Goerli)
-  const rewardToken = '0x18D30e7a8e46C33BDb97E749b82130EBB7967C56'; // add reward token address here (dWETH - Goerli)
+  const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // add staking token address here (PLR - Polygon)
+  const rewardToken = '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619'; // add reward token address here (wETH - Polygon)
   const maxTotalStake = 0; // will default to 7.2m PLR
 
   const values = [stakingToken, rewardToken, maxTotalStake];
