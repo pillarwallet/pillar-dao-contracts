@@ -58,10 +58,10 @@ const main = async () => {
   ///////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////
 
-  const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // add staking token address here (PLR - Polygon)
-  const rewardToken = '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619'; // add reward token address here (wETH - Polygon)
-  const minUserStake = 0;
-  const maxUserStake = 0;
+  const stakingToken = '0x515D2A390C24dB531e209701d907FC0Ee1C7c224'; // add staking token address here (Dummy PLR - Mumbai)
+  const rewardToken = '0xA0b3fb93a85A3024130556fA7a685E254744373a'; // add reward token address here (Dummy wETH - Mumbai)
+  const minUserStake = ethers.utils.parseEther('1');
+  const maxUserStake = ethers.utils.parseEther('20');
   const maxTotalStake = 0; // will default to 7.2m PLR
   const stakeablePeriod = ONE_DAY;
   const tokenLockupDuration = ONE_WEEK;
