@@ -1,5 +1,8 @@
 const { ethers, run } = require('hardhat');
 
+const ONE_DAY = 60 * 60 * 24;
+const ONE_WEEK = 60 * 60 * 24 * 7;
+
 const main = async () => {
   await run('compile');
 
@@ -9,14 +12,14 @@ const main = async () => {
 
   // /* FOR TESTING PURPOSES */
 
-  // // Deploy DummyPillarToken contract
-  // const DummyPillar = await ethers.getContractFactory("DummyPillarToken");
+  // Deploy DummyPillarToken contract
+  // const DummyPillar = await ethers.getContractFactory('DummyPillarToken');
   // const dummyPillar = await DummyPillar.deploy();
   // await dummyPillar.deployed();
-  // const dummyPillarAddress = await dummyPillar.address;
+  // const dummyPillarTokenAddress = await dummyPillar.address;
 
   // console.log(
-  //   "DummyPillarToken - deployed to address with values: ",
+  //   'DummyPillarToken - deployed to address with values: ',
   //   dummyPillar.address
   // );
 
@@ -24,20 +27,20 @@ const main = async () => {
   // await dummyPillar.deployTransaction.wait(5);
 
   // // Verify contract on Etherscan
-  // await hre.run("verify:verify", {
+  // await hre.run('verify:verify', {
   //   address: dummyPillar.address,
-  //   contract: "contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken",
+  //   contract: 'contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken',
   //   constructorArguments: [],
   // });
 
   // // Deploy DummyWETHToken contract
-  // const DummyWETH = await ethers.getContractFactory("DummyWETHToken");
+  // const DummyWETH = await ethers.getContractFactory('DummyWETHToken');
   // const dummyWETH = await DummyWETH.deploy();
   // await dummyWETH.deployed();
-  // const dummyWETHAddress = await dummyWETH.address;
+  // const dummyWETHTokenAddress = await dummyWETH.address;
 
   // console.log(
-  //   "DummyWETHToken - deployed to address with values: ",
+  //   'DummyWETHToken - deployed to address with values: ',
   //   dummyWETH.address
   // );
 
@@ -45,9 +48,9 @@ const main = async () => {
   // await dummyWETH.deployTransaction.wait(5);
 
   // // Verify contract on Etherscan
-  // await hre.run("verify:verify", {
+  // await hre.run('verify:verify', {
   //   address: dummyWETH.address,
-  //   contract: "contracts/testing_utils/DummyWETHToken.sol:DummyWETHToken",
+  //   contract: 'contracts/testing_utils/DummyWETHToken.sol:DummyWETHToken',
   //   constructorArguments: [],
   // });
 
@@ -55,11 +58,23 @@ const main = async () => {
   ///////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////
 
-  const stakingToken = '0xb7c5A2edC0c2e13104f0eDc5F237Df766ff134A8'; // add staking token address here (dPLR - Goerli)
-  const rewardToken = '0x18D30e7a8e46C33BDb97E749b82130EBB7967C56'; // add reward token address here (dWETH - Goerli)
+  const stakingToken = '0x515D2A390C24dB531e209701d907FC0Ee1C7c224'; // add staking token address here (Dummy PLR - Mumbai)
+  const rewardToken = '0xA0b3fb93a85A3024130556fA7a685E254744373a'; // add reward token address here (Dummy wETH - Mumbai)
+  const minUserStake = ethers.utils.parseEther('1');
+  const maxUserStake = ethers.utils.parseEther('20');
   const maxTotalStake = 0; // will default to 7.2m PLR
+  const stakeablePeriod = ONE_DAY;
+  const tokenLockupDuration = ONE_WEEK;
 
-  const values = [stakingToken, rewardToken, maxTotalStake];
+  const values = [
+    stakingToken,
+    rewardToken,
+    minUserStake,
+    maxUserStake,
+    maxTotalStake,
+    stakeablePeriod,
+    tokenLockupDuration,
+  ];
 
   // Deploy Pillar Staking contract
   const PillarStaking = await ethers.getContractFactory('PillarStaking');
@@ -79,7 +94,15 @@ const main = async () => {
   await hre.run('verify:verify', {
     address: pillarStaking.address,
     contract: 'contracts/PillarStaking.sol:PillarStaking',
-    constructorArguments: [stakingToken, rewardToken, maxTotalStake],
+    constructorArguments: [
+      stakingToken,
+      rewardToken,
+      minUserStake,
+      maxUserStake,
+      maxTotalStake,
+      stakeablePeriod,
+      tokenLockupDuration,
+    ],
   });
 };
 
