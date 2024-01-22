@@ -18,14 +18,14 @@ const main = async () => {
 
   // /* FOR TESTING PURPOSES */
 
-  // // Deploy DummyPillarToken contract
-  // const DummyPillar = await ethers.getContractFactory("DummyPillarToken");
+  // Deploy DummyPillarToken contract
+  // const DummyPillar = await ethers.getContractFactory('DummyPillarToken');
   // const dummyPillar = await DummyPillar.deploy();
   // await dummyPillar.deployed();
-  // const dummyPillarAddress = await dummyPillar.address;
+  // const dummyPillarTokenAddress = await dummyPillar.address;
 
   // console.log(
-  //   "DummyPillarToken - deployed to address with values: ",
+  //   'DummyPillarToken - deployed to address with values: ',
   //   dummyPillar.address
   // );
 
@@ -33,20 +33,20 @@ const main = async () => {
   // await dummyPillar.deployTransaction.wait(5);
 
   // // Verify contract on Etherscan
-  // await hre.run("verify:verify", {
+  // await hre.run('verify:verify', {
   //   address: dummyPillar.address,
-  //   contract: "contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken",
+  //   contract: 'contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken',
   //   constructorArguments: [],
   // });
 
   // // Deploy DummyWETHToken contract
-  // const DummyWETH = await ethers.getContractFactory("DummyWETHToken");
+  // const DummyWETH = await ethers.getContractFactory('DummyWETHToken');
   // const dummyWETH = await DummyWETH.deploy();
   // await dummyWETH.deployed();
-  // const dummyWETHAddress = await dummyWETH.address;
+  // const dummyWETHTokenAddress = await dummyWETH.address;
 
   // console.log(
-  //   "DummyWETHToken - deployed to address with values: ",
+  //   'DummyWETHToken - deployed to address with values: ',
   //   dummyWETH.address
   // );
 
@@ -54,9 +54,9 @@ const main = async () => {
   // await dummyWETH.deployTransaction.wait(5);
 
   // // Verify contract on Etherscan
-  // await hre.run("verify:verify", {
+  // await hre.run('verify:verify', {
   //   address: dummyWETH.address,
-  //   contract: "contracts/testing_utils/DummyWETHToken.sol:DummyWETHToken",
+  //   contract: 'contracts/testing_utils/DummyWETHToken.sol:DummyWETHToken',
   //   constructorArguments: [],
   // });
 
@@ -100,7 +100,15 @@ const main = async () => {
   await hre.run('verify:verify', {
     address: pillarStaking.address,
     contract: 'contracts/PillarStaking.sol:PillarStaking',
-    constructorArguments: [stakingToken, rewardToken, maxTotalStake],
+    constructorArguments: [
+      stakingToken,
+      rewardToken,
+      minUserStake,
+      maxUserStake,
+      maxTotalStake,
+      stakeablePeriod,
+      tokenLockupDuration,
+    ],
   });
 };
 
