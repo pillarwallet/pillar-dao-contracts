@@ -8,45 +8,52 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {PillarStakedToken} from "./PillarStakedToken.sol";
 
 /// @title PillarStaking
-/// @author Luke Wickens <luke@pillarproject.io>
 /// @notice staking contract for PLR tokens
 
 contract PillarStaking is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
+    /* ========== Tokens variables ========== */
     IERC20 public stakingToken;
     IERC20 public rewardToken;
     PillarStakedToken public stakedToken;
-    address[] public stakeholderList;
-    mapping(address => Stakeholder) public stakeholderData;
 
+    /* ========== Calculation variables ========== */
     uint256 private constant BPS = 10000;
-    uint256 private constant STAKING_PERIOD = 4 weeks;
-    uint256 private constant STAKED_PERIOD = 52 weeks;
-    uint256 public minStake = 10000e18;
-    uint256 public maxStake = 250000e18;
+
+    /* ========== Stake amount variables ========== */
+    uint256 public minStake;
+    uint256 public maxStake;
     uint256 public maxTotalStake = 7200000e18;
     uint256 public totalStaked;
-    uint256 stakingPeriod;
-    uint256 stakedPeriod;
-    uint256 rewards;
+    uint256 public rewards;
 
+    /* ========== Contract state variables ========== */
+    uint256 public stakeablePeriod;
+    uint256 public tokenLockupPeriod;
+    uint256 public stakingDuration;
+    uint256 public stakedDuration;
+    StakingState state;
+
+    /* ========== Structs/ Mappings / Arrays ========== */
     struct Stakeholder {
         bool staked;
         uint256 stakedAmount;
         uint256 rewardAmount;
         bool claimed;
     }
+    address[] public stakeholderList;
+    mapping(address => Stakeholder) public stakeholderData;
 
+    /* ========== Enums ========== */
     enum StakingState {
         INITIALIZED,
         STAKEABLE,
         STAKED,
         READY_FOR_UNSTAKE
     }
-    StakingState state;
 
-    /* ========== EVENTS ========== */
+    /* ========== Events ========== */
 
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
@@ -57,7 +64,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     event MinStakeAmountUpdated(uint256 newMinStake);
     event MaxStakeAmountUpdated(uint256 newMaxStake);
 
-    /* ========== MODIFIERS ========== */
+    /* ========== Modifiers ========== */
 
     modifier whenInitialized() {
         if (state != StakingState.INITIALIZED) revert OnlyWhenInitialized();
@@ -80,26 +87,42 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         _;
     }
 
-    /* ========== CONSTRUCTOR ========== */
+    /* ========== Constructor ========== */
 
     constructor(
         address _stakingToken,
         address _rewardToken,
-        uint256 _maxTotalStake
+        uint256 _minUserStake,
+        uint256 _maxUserStake,
+        uint256 _maxTotalStake,
+        uint256 _stakeablePeriod,
+        uint256 _tokenLockupPeriod
     ) {
         if (_stakingToken == address(0)) revert InvalidStakingToken();
         if (_rewardToken == address(0)) revert InvalidRewardToken();
+        if (_minUserStake == 0 || _minUserStake > _maxUserStake)
+            revert InvalidMinimumStake(_minUserStake);
+        if (
+            (_maxTotalStake != 0 && _maxUserStake > _maxTotalStake) ||
+            _maxUserStake > maxTotalStake
+        ) revert InvalidMaximumStake(_maxUserStake);
         if (_maxTotalStake > 0) maxTotalStake = _maxTotalStake;
+        if (_stakeablePeriod == 0) revert InvalidStakeablePeriod();
+        if (_tokenLockupPeriod == 0) revert InvalidTokenLockupPeriod();
+        minStake = _minUserStake;
+        maxStake = _maxUserStake;
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
         stakedToken = new PillarStakedToken();
+        stakeablePeriod = _stakeablePeriod;
+        tokenLockupPeriod = _tokenLockupPeriod;
         setStateInitialized();
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    /* ========== Mutative functions ========== */
 
     function stake(uint256 _amount) external nonReentrant whenStakeable {
-        if (block.timestamp > stakingPeriod + STAKING_PERIOD)
+        if (block.timestamp > stakingDuration + stakeablePeriod)
             revert("StakingPeriodPassed()");
         if ((totalStaked + _amount) > maxTotalStake)
             revert MaximumTotalStakeReached({
@@ -161,7 +184,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         stakeholderData[msg.sender].rewardAmount = reward;
     }
 
-    /* ========== VIEWS ========== */
+    /* ========== View functions ========== */
 
     function getContractState() public view returns (StakingState) {
         return state;
@@ -183,7 +206,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
         return stakeholderData[account].rewardAmount;
     }
 
-    /* ========== RESTRICTED FUNCTIONS ========== */
+    /* ========== Restricted functions ========== */
 
     function depositRewards(uint256 _amount) external onlyOwner {
         if (_amount == 0) revert RewardsCannotBeZero();
@@ -194,7 +217,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     function updateMinStakeLimit(
         uint256 _amount
-    ) external onlyOwner whenStakeable {
+    ) external onlyOwner whenInitialized {
         if (maxStake < _amount)
             revert ProposedMinStakeTooHigh({
                 currentMax: maxStake,
@@ -207,7 +230,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     function updateMaxStakeLimit(
         uint256 _amount
-    ) external onlyOwner whenStakeable {
+    ) external onlyOwner whenInitialized {
         if (minStake > _amount)
             revert ProposedMaxStakeTooLow({
                 currentMin: minStake,
@@ -224,34 +247,42 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     function setStateStakeable() public onlyOwner {
         state = StakingState.STAKEABLE;
-        stakingPeriod = block.timestamp;
+        stakingDuration = block.timestamp;
         emit ContractStateUpdated(state);
     }
 
     function setStateStaked() public onlyOwner {
-        if (block.timestamp < stakingPeriod + STAKING_PERIOD)
+        if (block.timestamp < stakingDuration + stakeablePeriod)
             revert("StakingDurationTooShort()");
 
         state = StakingState.STAKED;
-        stakedPeriod = block.timestamp;
+        stakedDuration = block.timestamp;
         emit ContractStateUpdated(state);
     }
 
     function setStateReadyForUnstake() public onlyOwner {
-        if (block.timestamp < stakedPeriod + STAKED_PERIOD)
+        if (block.timestamp < stakedDuration + tokenLockupPeriod)
             revert("StakedDurationTooShort()");
         state = StakingState.READY_FOR_UNSTAKE;
         emit ContractStateUpdated(state);
     }
 
+    function withdrawLeftoverRewards() public onlyOwner {
+        uint256 rewardsRemaining = rewardToken.balanceOf(address(this));
+        rewardToken.safeTransfer(msg.sender, rewardsRemaining);
+        rewards = 0;
+    }
+
     /* ====== Fallback functions ======== */
     receive() external payable {}
 
-    /* ========== ERRORS ========== */
+    /* ========== Custom errors ========== */
 
     error ZeroAddress();
     error InvalidRewardToken();
     error InvalidStakingToken();
+    error InvalidStakeablePeriod();
+    error InvalidTokenLockupPeriod();
     error InvalidMinimumStake(uint256 minimumStakeAmount);
     error InvalidMaximumStake(uint256 maximumStakeAmount);
     error InsufficientBalance();

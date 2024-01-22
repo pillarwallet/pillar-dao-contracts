@@ -1,5 +1,14 @@
 const { ethers, run } = require('hardhat');
 
+const secondsInMinute = 60;
+const minutesInHour = 60;
+const hoursInDay = 24;
+const daysInYear = 365;
+const daysInMonthAverage = 30.44;
+const secondsInMonth =
+  secondsInMinute * minutesInHour * hoursInDay * daysInMonthAverage;
+const secondsInYear = secondsInMinute * minutesInHour * hoursInDay * daysInYear;
+
 const main = async () => {
   await run('compile');
 
@@ -55,11 +64,23 @@ const main = async () => {
   ///////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////
 
-  const stakingToken = '0xb7c5A2edC0c2e13104f0eDc5F237Df766ff134A8'; // add staking token address here (dPLR - Goerli)
-  const rewardToken = '0x18D30e7a8e46C33BDb97E749b82130EBB7967C56'; // add reward token address here (dWETH - Goerli)
+  const stakingToken = '0x515D2A390C24dB531e209701d907FC0Ee1C7c224'; // add staking token address here (Dummy PLR - Mumbai)
+  const rewardToken = '0xA0b3fb93a85A3024130556fA7a685E254744373a'; // add reward token address here (Dummy wETH - Mumbai)
+  const minUserStake = ethers.utils.parseEther('10000');
+  const maxUserStake = ethers.utils.parseEther('250000');
   const maxTotalStake = 0; // will default to 7.2m PLR
+  const stakeablePeriod = secondsInMonth;
+  const tokenLockupDuration = secondsInYear;
 
-  const values = [stakingToken, rewardToken, maxTotalStake];
+  const values = [
+    stakingToken,
+    rewardToken,
+    minUserStake,
+    maxUserStake,
+    maxTotalStake,
+    stakeablePeriod,
+    tokenLockupDuration,
+  ];
 
   // Deploy Pillar Staking contract
   const PillarStaking = await ethers.getContractFactory('PillarStaking');

@@ -4,8 +4,11 @@ const { expectRevert } = require('@openzeppelin/test-helpers');
 const contract = require('../artifacts/contracts/PillarStakedToken.sol/PillarStakedToken.json');
 
 const oneDay = 60 * 60 * 24;
+const oneWeek = 60 * 60 * 24 * 7;
 const oneMonth = 4 * 7 * 24 * 60 * 60;
 const oneYearOneWeek = 53 * 7 * 24 * 60 * 60;
+const minUserStake = ethers.utils.parseEther('10000');
+const maxUserStake = ethers.utils.parseEther('250000');
 
 describe('PillarStakingContract', () => {
   let wethToken,
@@ -35,7 +38,11 @@ describe('PillarStakingContract', () => {
     plrStaking = await PillarStaking.deploy(
       plrToken.address,
       wethToken.address,
-      0
+      minUserStake,
+      maxUserStake,
+      0,
+      oneDay,
+      oneWeek
     );
 
     // get PillarStakedToken address & attach
@@ -91,6 +98,9 @@ describe('PillarStakingContract', () => {
       const psStakingState = await plrStaking.getContractState();
       const psStakingToken = await plrStaking.stakingToken();
       const psRewardToken = await plrStaking.rewardToken();
+      const psStakablePeriod = await plrStaking.stakeablePeriod();
+      const psTokenLockupPeriod = await plrStaking.tokenLockupPeriod();
+
       expect(psTokenAddress).to.equal(plrToken.address);
       expect(psTokenMinStake).to.equal(ethers.utils.parseEther('10000'));
       expect(psTokenMaxStake).to.equal(ethers.utils.parseEther('250000'));
@@ -98,6 +108,8 @@ describe('PillarStakingContract', () => {
       expect(psStakingState).to.equal(0);
       expect(psStakingToken).to.equal(plrToken.address);
       expect(psRewardToken).to.equal(wethToken.address);
+      expect(psStakablePeriod).to.equal(oneDay);
+      expect(psTokenLockupPeriod).to.equal(oneWeek);
     });
 
     it('Deploys Pillar Staked Token from Staking contract without errors', async () => {
@@ -278,7 +290,6 @@ describe('PillarStakingContract', () => {
     it('updateMaxStakeLimit(): Should allow decreasing of maximum stake', async () => {
       const minStake = '0'; // 0 PLR
       const newMaxStake = '13000000000000000000'; // 13 PLR
-      await plrStaking.connect(owner).setStateStakeable();
       await plrStaking.updateMinStakeLimit(minStake);
       await plrStaking.updateMaxStakeLimit(newMaxStake);
       const lowerMaxStake = await plrStaking.maxStake();
@@ -287,7 +298,6 @@ describe('PillarStakingContract', () => {
 
     it('updateMaxStakeLimit(): Should allow increasing of maximum stake', async () => {
       const newMaxStake = '331313000000000000000000'; // 331,313 PLR
-      await plrStaking.connect(owner).setStateStakeable();
       await plrStaking.updateMaxStakeLimit(newMaxStake);
       const higherMaxStake = await plrStaking.maxStake();
       expect(higherMaxStake.toString()).to.equal(newMaxStake);
@@ -297,7 +307,6 @@ describe('PillarStakingContract', () => {
   describe('Updating min stake limit', () => {
     it('updateMinStakeLimit(): Should allow decreasing of minimum stake', async () => {
       const newMinStake = '13000000000000000000'; // 13 PLR
-      await plrStaking.connect(owner).setStateStakeable();
       await plrStaking.updateMinStakeLimit(newMinStake);
       const lowerMinStake = await plrStaking.minStake();
       expect(lowerMinStake.toString()).to.equal(newMinStake);
@@ -305,7 +314,6 @@ describe('PillarStakingContract', () => {
 
     it('updateMinStakeLimit(): Should allow increasing of minimum stake', async () => {
       const newMinStake = '13131000000000000000000'; // 13,131 PLR
-      await plrStaking.connect(owner).setStateStakeable();
       await plrStaking.updateMinStakeLimit(newMinStake);
       const higherMinStake = await plrStaking.minStake();
       expect(higherMinStake.toString()).to.equal(newMinStake);
@@ -509,17 +517,19 @@ describe('PillarStakingContract', () => {
       );
     });
 
-    it('updateMinStakeLimit(): Error checks - should trigger contract state (STAKEABLE) check', async () => {
+    it('updateMinStakeLimit(): Error checks - should trigger contract state (INITIALIZED) check', async () => {
+      await plrStaking.connect(owner).setStateStakeable();
       await expectRevert(
         plrStaking.connect(owner).updateMinStakeLimit(5000),
-        'OnlyWhenStakeable()'
+        'OnlyWhenInitialized()'
       );
     });
 
-    it('updateMaxStakeLimit(): Error checks - should trigger contract state (STAKEABLE) check', async () => {
+    it('updateMaxStakeLimit(): Error checks - should trigger contract state (INITIALIZED) check', async () => {
+      await plrStaking.connect(owner).setStateStakeable();
       await expectRevert(
         plrStaking.connect(owner).updateMaxStakeLimit(5000),
-        'OnlyWhenStakeable()'
+        'OnlyWhenInitialized()'
       );
     });
   });
@@ -573,7 +583,6 @@ describe('PillarStakingContract', () => {
 
     it('updateMinStakeLimit(): Should emit an MinStakeAmountUpdated event', async () => {
       const newMinStake = '13131000000000000000000'; // 13,131 PLR
-      await plrStaking.connect(owner).setStateStakeable();
       await expect(plrStaking.updateMinStakeLimit(newMinStake))
         .to.emit(plrStaking, 'MinStakeAmountUpdated')
         .withArgs(newMinStake);
@@ -581,7 +590,6 @@ describe('PillarStakingContract', () => {
 
     it('updateMaxStakeLimit(): Should emit an MaxStakeAmountUpdated event', async () => {
       const newMaxStake = '331313000000000000000000'; // 331,313 PLR
-      await plrStaking.connect(owner).setStateStakeable();
       await expect(plrStaking.updateMaxStakeLimit(newMaxStake))
         .to.emit(plrStaking, 'MaxStakeAmountUpdated')
         .withArgs(newMaxStake);
@@ -680,8 +688,8 @@ describe('PillarStakingContract', () => {
     it('stake(): Error checks - should trigger maximum total stake reached amount check', async () => {
       const newMaxStake = '7199999000000000000000000'; // 7,199,999 PLR
       const invalidStake = '10000000000000000000000'; // 10,000 PLR
-      await plrStaking.connect(owner).setStateStakeable();
       await plrStaking.connect(owner).updateMaxStakeLimit(newMaxStake);
+      await plrStaking.connect(owner).setStateStakeable();
       await plrStaking.connect(owner).stake(newMaxStake);
       await expectRevert(
         plrStaking.connect(addr1).stake(invalidStake),
