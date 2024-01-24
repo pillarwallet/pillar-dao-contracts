@@ -8,7 +8,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {PillarStakedToken} from "./PillarStakedToken.sol";
 
 /// @title PillarStaking
-/// @author Luke Wickens <luke@pillarproject.io>
 /// @notice staking contract for PLR tokens
 
 contract PillarStaking is ReentrancyGuard, Ownable {
@@ -218,7 +217,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     function updateMinStakeLimit(
         uint256 _amount
-    ) external onlyOwner whenStakeable {
+    ) external onlyOwner whenInitialized {
         if (maxStake < _amount)
             revert ProposedMinStakeTooHigh({
                 currentMax: maxStake,
@@ -231,7 +230,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
 
     function updateMaxStakeLimit(
         uint256 _amount
-    ) external onlyOwner whenStakeable {
+    ) external onlyOwner whenInitialized {
         if (minStake > _amount)
             revert ProposedMaxStakeTooLow({
                 currentMin: minStake,
