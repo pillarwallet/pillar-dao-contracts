@@ -26,7 +26,8 @@ contract PillarDAO is IPillarDAO, Ownable, ReentrancyGuard {
     constructor(
         address _stakingToken,
         uint256 _stakeAmount,
-        address _membershipNft
+        address _membershipNft,
+        address[9] memory _preExistingMembers
     ) {
         require(
             _stakingToken != address(0),
@@ -36,7 +37,7 @@ contract PillarDAO is IPillarDAO, Ownable, ReentrancyGuard {
         stakingToken = _stakingToken;
         stakeAmount = _stakeAmount;
         membershipNFT = MembershipNFT(_membershipNft);
-        // _addExistingMembers();
+        _addExistingMembers(_preExistingMembers);
     }
 
     function deposit(uint256 _amount) external override nonReentrant {
@@ -127,32 +128,52 @@ contract PillarDAO is IPillarDAO, Ownable, ReentrancyGuard {
         membershipNFT = MembershipNFT(_newAddr);
     }
 
-    // function _addExistingMembers() internal {
-    //     // pre-add existing DAO members [5]
-    //     memberships[0x49E2a5d77Fa210403864f74e6556f17a8FcF70b3] = 1;
-    //     balances[0x49E2a5d77Fa210403864f74e6556f17a8FcF70b3] = Deposit({
-    //         depositAmount: 10000 ether,
-    //         depositTime: block.timestamp
-    //     });
-    //     memberships[0x16736E6dcbBD6C1137B31E8f3609A7dC9d626563] = 2;
-    //     balances[0x16736E6dcbBD6C1137B31E8f3609A7dC9d626563] = Deposit({
-    //         depositAmount: 10000 ether,
-    //         depositTime: block.timestamp
-    //     });
-    //     memberships[0x91dF363df3aAB23F8aC22b135662cEDD336f81fb] = 3;
-    //     balances[0x91dF363df3aAB23F8aC22b135662cEDD336f81fb] = Deposit({
-    //         depositAmount: 10000 ether,
-    //         depositTime: block.timestamp
-    //     });
-    //     memberships[0x699A05C81aa37a067a7ad88e8aDf04F975a651d7] = 4;
-    //     balances[0x699A05C81aa37a067a7ad88e8aDf04F975a651d7] = Deposit({
-    //         depositAmount: 10000 ether,
-    //         depositTime: block.timestamp
-    //     });
-    //     memberships[0xb1E6C220925bb475C694E896645f5636C0D019dc] = 5;
-    //     balances[0xb1E6C220925bb475C694E896645f5636C0D019dc] = Deposit({
-    //         depositAmount: 10000 ether,
-    //         depositTime: block.timestamp
-    //     });
-    // }
+    function _addExistingMembers(address[9] memory _members) internal {
+        // pre-add existing DAO members [9]
+        memberships[_members[0]] = 1;
+        balances[_members[0]] = Deposit({
+            depositAmount: 10000 ether,
+            depositTime: block.timestamp
+        });
+        memberships[_members[1]] = 2;
+        balances[_members[1]] = Deposit({
+            depositAmount: 10000 ether,
+            depositTime: block.timestamp
+        });
+        memberships[_members[2]] = 3;
+        balances[_members[2]] = Deposit({
+            depositAmount: 10000 ether,
+            depositTime: block.timestamp
+        });
+        memberships[_members[3]] = 4;
+        balances[_members[3]] = Deposit({
+            depositAmount: 10000 ether,
+            depositTime: block.timestamp
+        });
+        memberships[_members[4]] = 5;
+        balances[_members[4]] = Deposit({
+            depositAmount: 10000 ether,
+            depositTime: block.timestamp
+        });
+        memberships[_members[5]] = 6;
+        balances[_members[5]] = Deposit({
+            depositAmount: 10000 ether,
+            depositTime: block.timestamp
+        });
+        memberships[_members[6]] = 7;
+        balances[_members[6]] = Deposit({
+            depositAmount: 10000 ether,
+            depositTime: block.timestamp
+        });
+        memberships[_members[7]] = 8;
+        balances[_members[7]] = Deposit({
+            depositAmount: 10000 ether,
+            depositTime: block.timestamp
+        });
+        memberships[_members[8]] = 9;
+        balances[_members[8]] = Deposit({
+            depositAmount: 10000 ether,
+            depositTime: block.timestamp
+        });
+    }
 }
