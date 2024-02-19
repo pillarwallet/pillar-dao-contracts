@@ -295,5 +295,65 @@ describe('PillarDAO', () => {
       expect(await pillarDAO.membershipId(members[7])).to.equal(0);
       expect(await pillarDAO.membershipId(members[8])).to.equal(0);
     });
+
+    it('should revert if any pre-existing member address is address(0)', async () => {
+      const invalidMembers = [
+        pm1.address,
+        pm2.address,
+        ethers.constants.AddressZero,
+      ];
+      const fact = await ethers.getContractFactory('PillarDAO');
+      await expect(
+        fact.deploy(
+          pillarToken.address,
+          stakingAmount,
+          membershipNFT.address,
+          invalidMembers
+        )
+      ).to.be.revertedWith('PillarDAO: invalid pre-existing member');
+    });
+  });
+
+  describe('Viewing and setting deposit timestamp for a member', async () => {
+    it('should return the deposit timestamp for a member', async () => {
+      const now = await time.latest();
+      await pillarToken
+        .connect(owner)
+        .approve(pillarDAO.address, stakingAmount);
+      await pillarDAO.deposit(stakingAmount);
+      const depTS = await pillarDAO.viewDepositTimestamp(owner.address);
+      const then = await time.latest();
+      expect(parseInt(depTS.toString())).to.be.greaterThan(now);
+      expect(parseInt(depTS.toString())).to.be.lessThanOrEqual(then);
+    });
+
+    it('invalid member', async () => {
+      await expect(
+        pillarDAO
+          .connect(owner)
+          .setDepositTimestamp(
+            ethers.constants.AddressZero,
+            await time.latest()
+          )
+      ).to.be.revertedWith('PillarDAO: invalid member');
+    });
+
+    it('invalid timestamp', async () => {
+      await expect(
+        pillarDAO.connect(owner).setDepositTimestamp(addr1.address, 0)
+      ).to.be.revertedWith('PillarDAO: invalid timestamp');
+    });
+
+    it('should set the new timestamp for the member', async () => {
+      await pillarToken
+        .connect(owner)
+        .approve(pillarDAO.address, stakingAmount);
+      await pillarDAO.deposit(stakingAmount);
+      const initTS = await pillarDAO.viewDepositTimestamp(owner.address);
+      await pillarDAO.setDepositTimestamp(owner.address, 100);
+      const newTS = await pillarDAO.viewDepositTimestamp(owner.address);
+      expect(newTS).lt(initTS);
+      expect(newTS).to.equal(100);
+    });
   });
 });

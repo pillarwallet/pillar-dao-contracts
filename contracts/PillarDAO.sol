@@ -27,7 +27,7 @@ contract PillarDAO is IPillarDAO, Ownable, ReentrancyGuard {
         address _stakingToken,
         uint256 _stakeAmount,
         address _membershipNft,
-        address[9] memory _preExistingMembers
+        address[] memory _preExistingMembers
     ) {
         require(
             _stakingToken != address(0),
@@ -37,6 +37,9 @@ contract PillarDAO is IPillarDAO, Ownable, ReentrancyGuard {
         stakingToken = _stakingToken;
         stakeAmount = _stakeAmount;
         membershipNFT = MembershipNFT(_membershipNft);
+        for(uint256 i; i < _preExistingMembers.length; i++) {
+            require(_preExistingMembers[i] != address(0), "PillarDAO: invalid pre-existing member");
+        }
         _addExistingMembers(_preExistingMembers);
     }
 
@@ -128,52 +131,24 @@ contract PillarDAO is IPillarDAO, Ownable, ReentrancyGuard {
         membershipNFT = MembershipNFT(_newAddr);
     }
 
-    function _addExistingMembers(address[9] memory _members) internal {
-        // pre-add existing DAO members [9]
-        memberships[_members[0]] = 1;
-        balances[_members[0]] = Deposit({
+    function setDepositTimestamp(address _member, uint256 _timestamp) external onlyOwner {
+        require(_member != address(0), "PillarDAO: invalid member");
+        require(_timestamp != 0, "PillarDAO: invalid timestamp");
+        balances[_member].depositTime = _timestamp;
+        emit DepositTimestampSet(_member, _timestamp);
+    }
+
+    function viewDepositTimestamp(address _member) public view returns(uint256) {
+        return balances[_member].depositTime;
+    }
+
+    function _addExistingMembers(address[] memory _members) internal {
+        for(uint256 i; i < _members.length; i++) {
+            memberships[_members[i]] = i + 1;
+        balances[_members[i]] = Deposit({
             depositAmount: 10000 ether,
             depositTime: block.timestamp
         });
-        memberships[_members[1]] = 2;
-        balances[_members[1]] = Deposit({
-            depositAmount: 10000 ether,
-            depositTime: block.timestamp
-        });
-        memberships[_members[2]] = 3;
-        balances[_members[2]] = Deposit({
-            depositAmount: 10000 ether,
-            depositTime: block.timestamp
-        });
-        memberships[_members[3]] = 4;
-        balances[_members[3]] = Deposit({
-            depositAmount: 10000 ether,
-            depositTime: block.timestamp
-        });
-        memberships[_members[4]] = 5;
-        balances[_members[4]] = Deposit({
-            depositAmount: 10000 ether,
-            depositTime: block.timestamp
-        });
-        memberships[_members[5]] = 6;
-        balances[_members[5]] = Deposit({
-            depositAmount: 10000 ether,
-            depositTime: block.timestamp
-        });
-        memberships[_members[6]] = 7;
-        balances[_members[6]] = Deposit({
-            depositAmount: 10000 ether,
-            depositTime: block.timestamp
-        });
-        memberships[_members[7]] = 8;
-        balances[_members[7]] = Deposit({
-            depositAmount: 10000 ether,
-            depositTime: block.timestamp
-        });
-        memberships[_members[8]] = 9;
-        balances[_members[8]] = Deposit({
-            depositAmount: 10000 ether,
-            depositTime: block.timestamp
-        });
+        }
     }
 }

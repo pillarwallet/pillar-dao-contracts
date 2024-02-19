@@ -4,7 +4,21 @@ async function main() {
   const NFT_IMAGE_LINK = ''; // Set NFT image link
   const [deployer] = await ethers.getSigners();
   const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // PLR Token Polygon
-  const preExistingMembers = process.env.PRE_EXISTING_MEMBERS;
+  const preExistingMembers = [
+    '0x2b9e8c8d9bfB803Fd0E663D6573086Ab8C435098',
+    '0xe55b958B9416adB29909d52D3969F519160e63D8',
+    '0x4414348B92Af7784394fb12F030DF7e8Fd6A2755',
+    '0x65447bC1716b2C8176B9B65FFBc8d882dB6c9766',
+    '0xe9EE49F67eD851e80f1f50D0AF850b37B3D198A6',
+    '0xfF1ED0c529c3a61f6ef61847Cb4331f42e303696',
+    '0xAD1CBFcF53d1F7213D2B6359e8468244e3DE27b2',
+    '0xbe5951e8ab38fe6c0fa6fF1fB44ca3059Ee437Fe',
+    '0x763AAD3f4C936D94D794451dE89D8e3297091205',
+  ];
+  const memberDepositTimes = [
+    1691684454, 1692039593, 1696258495, 1696338126, 1696355349, 1696544327,
+    1698407526, 1706461032, 1707760153,
+  ];
 
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
@@ -52,6 +66,34 @@ async function main() {
     .connect(deployer)
     .setVaultAddress(pillarDaoContract.address);
   console.log(`Vault Address set to: ${pillarDaoContract.address}`);
+
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[0], memberDepositTimes[0]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[1], memberDepositTimes[1]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[2], memberDepositTimes[2]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[3], memberDepositTimes[3]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[4], memberDepositTimes[4]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[5], memberDepositTimes[5]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[6], memberDepositTimes[6]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[7], memberDepositTimes[7]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[8], memberDepositTimes[8]);
 
   console.log('Starting verification...');
 
