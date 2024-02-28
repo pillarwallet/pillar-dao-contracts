@@ -8,20 +8,20 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
 
-  // Deploy Pillar Token (ONLY FOR TESTING!)
-  const PillarToken = await ethers.getContractFactory('DummyPillarToken');
-  const pillarToken = await PillarToken.deploy();
-  await pillarToken.deployed();
-  console.log('PillarToken address:', pillarToken.address);
+  // // Deploy Pillar Token (ONLY FOR TESTING!)
+  // const PillarToken = await ethers.getContractFactory('DummyPillarToken');
+  // const pillarToken = await PillarToken.deploy();
+  // await pillarToken.deployed();
+  // console.log('PillarToken address:', pillarToken.address);
 
-  // Wait for 10 block transactions to ensure deployment before verifying
-  await pillarToken.deployTransaction.wait(10);
+  // // Wait for 10 block transactions to ensure deployment before verifying
+  // await pillarToken.deployTransaction.wait(10);
 
-  // Verify contract on Etherscan
-  await hre.run('verify:verify', {
-    address: pillarToken.address,
-    contract: 'contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken',
-  });
+  // // Verify contract on Etherscan
+  // await hre.run('verify:verify', {
+  //   address: pillarToken.address,
+  //   contract: 'contracts/testing_utils/DummyPillarToken.sol:DummyPillarToken',
+  // });
 
   // Set values for MembershipNFT deployment
   const name = 'Pillar DAA';
@@ -35,7 +35,7 @@ async function main() {
 
   // Set values for PillarDAO deployment
   const stakingAmount = ethers.utils.parseEther('10000');
-  const values = [stakingToken, stakingAmount, membershipNFT.address];
+  const values = [pillarToken.address, stakingAmount, membershipNFT.address];
 
   // PillarDAO deployment
   const PillarDAOFactory = await ethers.getContractFactory('PillarDAO');
