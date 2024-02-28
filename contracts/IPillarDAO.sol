@@ -12,7 +12,12 @@ interface IPillarDAO {
         uint256 indexed membershipId
     );
 
+    event DepositTimestampSet(address member, uint256 timestamp);
+
+
     function deposit(uint256 _amount) external;
 
     function withdraw() external;
+
+    function setDepositTimestamp(address _member, uint256 _timestamp) external;
 }
