@@ -24,7 +24,7 @@ contract PillarStaking is ReentrancyGuard, Ownable {
     /* ========== Stake amount variables ========== */
     uint256 public minStake;
     uint256 public maxStake;
-    uint256 public maxTotalStake = 7200000e18;
+    uint256 public maxTotalStake = 18000000e18;
     uint256 public totalStaked;
     uint256 public rewards;
 

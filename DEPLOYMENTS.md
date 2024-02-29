@@ -6,7 +6,7 @@
 | --- | --- | --- |  --- |
 | `MembershipNFT` | `polygon` | [0xFa2d028Ba398C20eE0A7483c00218F91FFEe47c6](https://polygonscan.com/address/0xFa2d028Ba398C20eE0A7483c00218F91FFEe47c6) | [0xc508647eb202be0f6dde65e2f7a1ef884eb738070cc1abfda1a112d3e65b2bee](https://polygonscan.com/tx/0xc508647eb202be0f6dde65e2f7a1ef884eb738070cc1abfda1a112d3e65b2bee) |
 | `PillarDAO` | `polygon` | [0xE9a88F0d543d3a0C14E487bed884B3dA49529e48](https://polygonscan.com/address/0xE9a88F0d543d3a0C14E487bed884B3dA49529e48) | [0x6a719efb47eb6c3f3d78627e3f934aeb87a432572e0c31d20e18576a3b58348a](https://polygonscan.com/tx/0x6a719efb47eb6c3f3d78627e3f934aeb87a432572e0c31d20e18576a3b58348a) |
-| `PillarStaking` | `polygon` | [0x1517777f11d3383b9A999ae63345a6cebe8Febb2](https://polygonscan.com/address/0x1517777f11d3383b9A999ae63345a6cebe8Febb2) | [0x6bf90b653dfd2faa0b28102e04bc1781076115028ed96673b57589ac9ba984ea](https://polygonscan.com/tx/0x6bf90b653dfd2faa0b28102e04bc1781076115028ed96673b57589ac9ba984ea) |
+| `PillarStaking` | `polygon` | [0x826a26e65266c5834977D4f552d31b9e29F668d4](https://polygonscan.com/address/0x826a26e65266c5834977D4f552d31b9e29F668d4) | [0x3f984a29e803c16984ca08da9dea169b42be7f463073e771f88719c416bdbbbf](https://polygonscan.com/tx/0x3f984a29e803c16984ca08da9dea169b42be7f463073e771f88719c416bdbbbf) |
 
 
 ## Testnets

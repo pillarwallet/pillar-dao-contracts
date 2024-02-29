@@ -68,7 +68,7 @@ const main = async () => {
   const rewardToken = '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619'; // add reward token address here (wETH - Polygon)
   const minUserStake = ethers.utils.parseEther('10000');
   const maxUserStake = ethers.utils.parseEther('250000');
-  const maxTotalStake = 0; // will default to 7.2m PLR
+  const maxTotalStake = 0; // will default to 18m PLR
   const stakeablePeriod = secondsInMonth;
   const tokenLockupDuration = secondsInYear;
 
