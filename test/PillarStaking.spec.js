@@ -104,7 +104,9 @@ describe('PillarStakingContract', () => {
       expect(psTokenAddress).to.equal(plrToken.address);
       expect(psTokenMinStake).to.equal(ethers.utils.parseEther('10000'));
       expect(psTokenMaxStake).to.equal(ethers.utils.parseEther('250000'));
-      expect(psTokenMaxTotalStake).to.equal(ethers.utils.parseEther('7200000'));
+      expect(psTokenMaxTotalStake).to.equal(
+        ethers.utils.parseEther('18000000')
+      );
       expect(psStakingState).to.equal(0);
       expect(psStakingToken).to.equal(plrToken.address);
       expect(psRewardToken).to.equal(wethToken.address);
@@ -703,7 +705,7 @@ describe('PillarStakingContract', () => {
     });
 
     it('Deployment: Error checks - on invalid max total stake - max total (default) < max user', async () => {
-      const invalidMaxStake = ethers.utils.parseEther('7200001');
+      const invalidMaxStake = ethers.utils.parseEther('18000001');
       const BadPillarStaking = await ethers.getContractFactory('PillarStaking');
       await expectRevert(
         BadPillarStaking.deploy(
@@ -808,14 +810,17 @@ describe('PillarStakingContract', () => {
     });
 
     it('stake(): Error checks - should trigger maximum total stake reached amount check', async () => {
-      const newMaxStake = '7199999000000000000000000'; // 7,199,999 PLR
+      const newMaxStake = '17999999000000000000000000'; // 17,999,999 PLR
       const invalidStake = '10000000000000000000000'; // 10,000 PLR
       await plrStaking.connect(owner).updateMaxStakeLimit(newMaxStake);
       await plrStaking.connect(owner).setStateStakeable();
+      await plrToken
+        .connect(owner)
+        .approve(plrStaking.address, ethers.utils.parseEther('17999999'));
       await plrStaking.connect(owner).stake(newMaxStake);
       await expectRevert(
         plrStaking.connect(addr1).stake(invalidStake),
-        `MaximumTotalStakeReached(7200000000000000000000000, 7199999000000000000000000, 1000000000000000000, 10000000000000000000000)`
+        `MaximumTotalStakeReached(18000000000000000000000000, 17999999000000000000000000, 1000000000000000000, 10000000000000000000000)`
       );
     });
 
