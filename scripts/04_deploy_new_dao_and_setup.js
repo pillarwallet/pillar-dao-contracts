@@ -14,10 +14,12 @@ async function main() {
     '0xAD1CBFcF53d1F7213D2B6359e8468244e3DE27b2',
     '0xbe5951e8ab38fe6c0fa6fF1fB44ca3059Ee437Fe',
     '0x763AAD3f4C936D94D794451dE89D8e3297091205',
+    '0x17D740E35aef96820a232111b0c47430b49bc4A6',
+    '0xd91dD0Ac7aBd3d7B0c2594ad3f00999aBA77D73A',
   ];
   const memberDepositTimes = [
     1691684454, 1692039593, 1696258495, 1696338126, 1696355349, 1696544327,
-    1698407526, 1706461032, 1707760153,
+    1698407526, 1706461032, 1707760153, 1709335933, 1709390895,
   ];
 
   console.log('Deploying contracts with the account:', deployer.address);
@@ -52,6 +54,8 @@ async function main() {
   // mint MembershipNFT to existing members without NFT and swap vault to DAO
   await membershipNFT.mint(preExistingMembers[7]);
   await membershipNFT.mint(preExistingMembers[8]);
+  await membershipNFT.mint(preExistingMembers[9]);
+  await membershipNFT.mint(preExistingMembers[10]);
 
   // check minted NFTs
   console.log(
@@ -59,6 +63,12 @@ async function main() {
   );
   console.log(
     `${await membershipNFT.ownerOf(9)} should equal ${preExistingMembers[8]}`
+  );
+  console.log(
+    `${await membershipNFT.ownerOf(10)} should equal ${preExistingMembers[9]}`
+  );
+  console.log(
+    `${await membershipNFT.ownerOf(11)} should equal ${preExistingMembers[10]}`
   );
 
   // Set vault address back to DAO contract
@@ -94,6 +104,12 @@ async function main() {
   await pillarDaoContract
     .connect(deployer)
     .setDepositTimestamp(preExistingMembers[8], memberDepositTimes[8]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[9], memberDepositTimes[9]);
+  await pillarDaoContract
+    .connect(deployer)
+    .setDepositTimestamp(preExistingMembers[10], memberDepositTimes[10]);
 
   console.log('Starting verification...');
 

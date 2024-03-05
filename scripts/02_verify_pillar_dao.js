@@ -3,7 +3,7 @@ const { ethers } = require('hardhat');
 
 async function main() {
   // Values to be changed
-  const pillarDAO = '0xE9a88F0d543d3a0C14E487bed884B3dA49529e48';
+  const pillarDAO = '0xc380f15Db7be87441d0723F19fBb440AEaa734aB';
   const stakingToken = '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'; // PLR Token Polygon
   const stakingAmount = ethers.utils.parseEther('10000');
   const membershipNFT = '0xFa2d028Ba398C20eE0A7483c00218F91FFEe47c6';
@@ -17,6 +17,8 @@ async function main() {
     '0xAD1CBFcF53d1F7213D2B6359e8468244e3DE27b2',
     '0xbe5951e8ab38fe6c0fa6fF1fB44ca3059Ee437Fe',
     '0x763AAD3f4C936D94D794451dE89D8e3297091205',
+    '0x17D740E35aef96820a232111b0c47430b49bc4A6',
+    '0xd91dD0Ac7aBd3d7B0c2594ad3f00999aBA77D73A',
   ];
 
   // PillarDAO constructor arguments
